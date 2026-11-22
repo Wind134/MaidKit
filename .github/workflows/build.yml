@@ -129,8 +129,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.26"
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # runner 已预装 Android SDK 与 cmdline-tools，无需旧版 setup action
       - name: Install Android build dependencies
         run: |
           yes | sdkmanager --licenses
