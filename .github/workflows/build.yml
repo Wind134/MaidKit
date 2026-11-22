@@ -149,7 +149,11 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
-          test -n "$ANDROID_KEYSTORE_BASE64"
+          # 未配置密钥时构建未签名包
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "未配置签名密钥，跳过签名配置"
+            exit 0
+          fi
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release.jks
           {
             echo "storeFile=release.jks"
@@ -160,11 +164,21 @@ jobs:
       - run: flutter pub get
       - run: dart run build_runner build --delete-conflicting-outputs
       - run: flutter build apk --release --split-per-abi
+      - name: Normalize Android artifact names
+        run: |
+          mkdir -p ./android-release
+          for f in build/app/outputs/flutter-apk/app-*-release*.apk; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f" .apk)
+            name=${name%-unsigned}
+            cp "$f" "./android-release/$name.apk"
+          done
+          ls -la ./android-release
       - name: Archive Android artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-output-android
-          path: build/app/outputs/flutter-apk/app-*-release.apk
+          path: ./android-release/app-*-release.apk
 
   publish-release:
     needs: [build-windows, build-linux, build-android]

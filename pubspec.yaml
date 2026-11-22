@@ -53,9 +53,7 @@ dependencies:
   highlight: ^0.7.0
   intl: ^0.20.2
   island_ui_foundation:
-    git:
-      url: https://src.solsynth.dev/SoSYS/Solian.git
-      path: packages/island_ui_foundation
+    path: packages/island_ui_foundation
   window_manager:
     git:
       url: https://github.com/boyan01/window_manager.git
