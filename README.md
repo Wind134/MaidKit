@@ -241,6 +241,8 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 
 This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 
+This is an independently maintained fork of [Solynth/MaidKit](https://github.com/Solsynth/MaidKit). Original authorship and copyright remain with LittleSheep, Solsynth, and the original contributors; all existing copyright notices are retained. Modifications made in this fork are licensed under the same AGPL-3.0 terms.
+
 If you deploy an instance, fork this project, or redistribute modified versions of this software, you must comply with the AGPL-3.0 license terms, including:
 
 - Including a copy of the original license

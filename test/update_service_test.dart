@@ -51,7 +51,7 @@ void main() {
           'tag_name': '1.1.0+4',
           'name': 'MaidKit 1.1.0',
           'body': '## Changelog\n- Fixed things',
-          'html_url': 'https://github.com/Solsynth/MaidKit/releases/tag/v1.1.0',
+          'html_url': 'https://github.com/Wind134/MaidKit/releases/tag/v1.1.0',
           'created_at': '2026-08-01T12:00:00Z',
         }),
       ).fetchLatestRelease();
@@ -62,7 +62,7 @@ void main() {
       expect(release.body, '## Changelog\n- Fixed things');
       expect(
         release.htmlUrl,
-        'https://github.com/Solsynth/MaidKit/releases/tag/v1.1.0',
+        'https://github.com/Wind134/MaidKit/releases/tag/v1.1.0',
       );
       expect(release.createdAt, DateTime.utc(2026, 8, 1, 12));
     });
@@ -72,7 +72,7 @@ void main() {
         200,
         jsonEncode({
           'tag_name': '1.0.1',
-          'html_url': 'https://github.com/Solsynth/MaidKit/releases/tag/1.0.1',
+          'html_url': 'https://github.com/Wind134/MaidKit/releases/tag/1.0.1',
         }),
       ).fetchLatestRelease();
 
@@ -93,7 +93,7 @@ void main() {
       final missingTag = await _serviceWith(
         200,
         jsonEncode({
-          'html_url': 'https://github.com/Solsynth/MaidKit/releases/tag/1.0.1',
+          'html_url': 'https://github.com/Wind134/MaidKit/releases/tag/1.0.1',
         }),
       ).fetchLatestRelease();
       expect(missingTag, isNull);
@@ -105,7 +105,7 @@ void main() {
       expect(missingUrl, isNull);
     });
 
-    test('queries the Solsynth/MaidKit latest-release endpoint', () async {
+    test('queries the Wind134/MaidKit latest-release endpoint', () async {
       final adapter = _FakeAdapter(200, jsonEncode({'tag_name': '1.0.1'}));
       await UpdateService(
         dio: Dio(BaseOptions(validateStatus: (_) => true))
@@ -114,13 +114,13 @@ void main() {
 
       expect(
         adapter.requests.single.uri.toString(),
-        'https://api.github.com/repos/Solsynth/MaidKit/releases/latest',
+        'https://api.github.com/repos/Wind134/MaidKit/releases/latest',
       );
     });
   });
 
   group('download urls', () {
-    const base = 'https://fs.solsynth.dev/d/public/r2/maidkit';
+    const base = 'https://github.com/Wind134/MaidKit/releases/latest/download';
 
     test('resolves android split-abi apks', () {
       final service = UpdateService();

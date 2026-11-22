@@ -2,6 +2,9 @@ name: Build Release
 
 on:
   push:
+    # 提交到维护分支时构建，推送 tag 时额外发布 Release
+    branches:
+      - independent-maintenance
     tags:
       - "*"
   workflow_dispatch:
@@ -21,8 +24,7 @@ jobs:
   build-windows:
     if: github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows'
     runs-on: windows-latest
-    # Default pub cache lives under C:\Users\runneradmin\AppData (hidden attr),
-    # which breaks cargokit's Get-Item. Put it somewhere hidden-free.
+    # 默认缓存目录带隐藏属性，会导致 cargokit 读取失败，改用无隐藏属性的路径
     env:
       PUB_CACHE: D:\pub-cache
     steps:
@@ -38,9 +40,8 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      # Patches pub-cache packages for Windows: cargokit's resolve_symlinks.ps1
-      # (hidden AppData) and tailscale's hook (GOCACHE missing in the
-      # native-assets hook environment). See buildtools/fix-cargokit-windows.ps1
+      # 修正 Windows 构建依赖：cargokit 隐藏目录问题与 tailscale 的 GOCACHE 缺失
+      # 详见 buildtools/fix-cargokit-windows.ps1
       - name: Patch cargokit + tailscale for Windows build
         run: powershell -ExecutionPolicy Bypass -File buildtools/fix-cargokit-windows.ps1
       - run: dart run build_runner build --delete-conflicting-outputs
@@ -162,71 +163,26 @@ jobs:
           name: build-output-android
           path: build/app/outputs/flutter-apk/app-*-release.apk
 
-  upload-to-s3:
+  publish-release:
     needs: [build-windows, build-linux, build-android]
-    if: always()
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - if: needs.build-windows.result == 'success'
-        name: Download Windows installer artifact
+      - name: 下载各平台产物
         uses: actions/download-artifact@v4
         with:
-          name: build-output-windows-installer
-          path: ./artifacts/windows
-      - if: needs.build-linux.result == 'success'
-        name: Download AppImage artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output-linux-appimage
-          path: ./artifacts/linux
-      - if: needs.build-android.result == 'success'
-        name: Download Android artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output-android
-          path: ./artifacts/android
-      - if: needs.build-windows.result == 'success'
-        name: Zip Windows installer
+          path: ./artifacts
+      - name: 整理发布文件
         run: |
-          cd ./artifacts/windows
-          zip -r ../build-output-windows-installer.zip .
-      - if: needs.build-linux.result == 'success'
-        name: Zip Linux AppImage
-        run: |
-          cd ./artifacts/linux
-          zip -r ../build-output-linux-appimage.zip .
-      - if: needs.build-android.result == 'success'
-        name: Prepare Android APKs for upload
-        run: |
-          mkdir -p ./artifacts/android-r2
-          find ./artifacts/android -type f -name 'app-*-release.apk' -exec cp {} ./artifacts/android-r2/ \;
-      - if: needs.build-windows.result == 'success'
-        name: Upload Windows installer to R2
-        uses: ryand56/r2-upload-action@latest
+          # 文件名需与客户端下载链接一致
+          mkdir -p ./release
+          (cd ./artifacts/build-output-windows-installer && zip -qr ../../release/build-output-windows-installer.zip .)
+          (cd ./artifacts/build-output-linux-appimage && zip -qr ../../release/build-output-linux-appimage.zip .)
+          cp ./artifacts/build-output-android/app-*-release.apk ./release/
+      - name: 创建 Release 并上传安装包
+        uses: softprops/action-gh-release@v2
         with:
-          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
-          r2-access-key-id: ${{ secrets.S3_ACCESS_KEY_ID }}
-          r2-secret-access-key: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          r2-bucket: ${{ secrets.S3_BUCKET_NAME }}
-          source-dir: ./artifacts/build-output-windows-installer.zip
-          destination-dir: maidkit
-      - if: needs.build-linux.result == 'success'
-        name: Upload Linux to R2
-        uses: ryand56/r2-upload-action@latest
-        with:
-          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
-          r2-access-key-id: ${{ secrets.S3_ACCESS_KEY_ID }}
-          r2-secret-access-key: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          r2-bucket: ${{ secrets.S3_BUCKET_NAME }}
-          source-dir: ./artifacts/build-output-linux-appimage.zip
-          destination-dir: maidkit
-      - if: needs.build-android.result == 'success'
-        name: Upload Android split APKs to R2
-        uses: ryand56/r2-upload-action@latest
-        with:
-          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
-          r2-access-key-id: ${{ secrets.S3_ACCESS_KEY_ID }}
-          r2-secret-access-key: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          r2-bucket: ${{ secrets.S3_BUCKET_NAME }}
-          source-dir: ./artifacts/android-r2
-          destination-dir: maidkit
+          files: ./release/*
+          generate_release_notes: true

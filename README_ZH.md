@@ -219,6 +219,8 @@ flutter test
 
 本项目基于 GNU Affero General Public License v3.0 (AGPL-3.0) 许可证发布。
 
+本项目是 [Solynth/MaidKit](https://github.com/Solsynth/MaidKit) 的独立维护分支。原始作者身份与版权归 LittleSheep、Solsynth 及原项目贡献者所有，原有版权声明均予保留；本分支中的修改同样遵循 AGPL-3.0 条款。
+
 如果你部署本软件的实例、分叉本项目，或重新分发本软件的修改版本，你必须遵守 AGPL-3.0 许可证条款，包括：
 
 - 包含原始许可证的副本

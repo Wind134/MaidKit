@@ -138,10 +138,13 @@ class UpdateService {
 
   final Dio _dio;
 
+  // 从自己的仓库检查更新
   static const _releasesLatestApi =
-      'https://api.github.com/repos/Solsynth/MaidKit/releases/latest';
+      'https://api.github.com/repos/Wind134/MaidKit/releases/latest';
 
-  static const _downloadBaseUrl = 'https://fs.solsynth.dev/d/public/r2/maidkit';
+  // 安装包作为 Release 附件发布
+  static const _downloadBaseUrl =
+      'https://github.com/Wind134/MaidKit/releases/latest/download';
 
   /// Checks GitHub for the latest release and compares it against the current
   /// app version. If an update is available, shows a bottom sheet with the
