@@ -38,6 +38,8 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # 与仓库的 Gradle 8.14 / AGP 8.12 及依赖约束保持一致
+          version: "3.47.9"
           cache: true
       - run: flutter pub get
       # 修正 Windows 构建依赖：cargokit 隐藏目录问题与 tailscale 的 GOCACHE 缺失
@@ -86,6 +88,8 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # 与仓库的 Gradle 8.14 / AGP 8.12 及依赖约束保持一致
+          version: "3.47.9"
           cache: true
       - name: Install dependencies
         run: |
@@ -142,6 +146,8 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # 与仓库的 Gradle 8.14 / AGP 8.12 及依赖约束保持一致
+          version: "3.47.9"
           cache: true
       - name: Configure Android signing
         env:
@@ -163,8 +169,7 @@ jobs:
           } > android/key.properties
       - run: flutter pub get
       - run: dart run build_runner build --delete-conflicting-outputs
-      # CargoKit 不兼容 Gradle 9，绕过 Flutter 3.50 的 Gradle 版本校验
-      - run: flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
+      - run: flutter build apk --release --split-per-abi
       - name: Normalize Android artifact names
         run: |
           mkdir -p ./android-release
