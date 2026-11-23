@@ -29,6 +29,7 @@ import 'cloud_sync_service.dart';
 import 'connection_export_service.dart';
 import 'connection_import_service.dart';
 import 'connection_import_sheet.dart';
+import 'google_drive_sync_service.dart';
 import 'local_connection_manager.dart';
 import 'server_providers.dart';
 import 'tailscale_settings_section.dart';
@@ -642,7 +643,8 @@ class SettingsPage extends ConsumerWidget {
                         ),
                 ),
               ),
-              if (cloudUser.asData?.value != null) ...[
+              if (cloudUser.asData?.value?.provider ==
+                  CloudSyncProvider.solarpass) ...[
                 const SizedBox(height: 24),
                 _SettingsSection(
                   titleKey: 'settingsSolarNetworkAi',
@@ -1066,24 +1068,144 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
-  Widget _cloudLoginTile(BuildContext context, WidgetRef ref) => ListTile(
-    contentPadding: _sectionTilePadding,
-    shape: RoundedRectangleBorder(
-      borderRadius: _sectionTileBorderRadius(_SettingsTilePosition.only),
-    ),
-    leading: const CircleAvatar(child: Icon(Symbols.person)),
-    title: const Text('settingsCloudSignIn').tr(),
-    subtitle: const Text('settingsCloudSignInHint').tr(),
-    trailing: FilledButton(
-      onPressed: () => _signInToCloud(context, ref),
-      child: const Text('settingsCloudSignInAction').tr(),
-    ),
-    onTap: () => _signInToCloud(context, ref),
+  Widget _cloudLoginTile(BuildContext context, WidgetRef ref) => Column(
+    children: [
+      ListTile(
+        contentPadding: _sectionTilePadding,
+        shape: RoundedRectangleBorder(
+          borderRadius: _sectionTileBorderRadius(_SettingsTilePosition.first),
+        ),
+        leading: const CircleAvatar(child: Icon(Symbols.cloud_sync)),
+        title: const Text('settingsGoogleSignIn').tr(),
+        subtitle: const Text('settingsGoogleSignInHint').tr(),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Symbols.settings),
+              tooltip: 'settingsGoogleOAuthConfigure'.tr(),
+              onPressed: () => _configureGoogleOAuth(context, ref),
+            ),
+            const SizedBox(width: 4),
+            FilledButton(
+              onPressed: () => _signInWithGoogle(context, ref),
+              child: const Text('settingsCloudSignInAction').tr(),
+            ),
+          ],
+        ),
+        onTap: () => _signInWithGoogle(context, ref),
+      ),
+      const Divider(height: 1),
+      ListTile(
+        contentPadding: _sectionTilePadding,
+        shape: RoundedRectangleBorder(
+          borderRadius: _sectionTileBorderRadius(_SettingsTilePosition.last),
+        ),
+        leading: const CircleAvatar(child: Icon(Symbols.person)),
+        title: const Text('settingsCloudSignIn').tr(),
+        subtitle: const Text('settingsCloudSignInHint').tr(),
+        trailing: OutlinedButton(
+          onPressed: () => _signInToCloud(context, ref),
+          child: const Text('settingsCloudSignInAction').tr(),
+        ),
+        onTap: () => _signInToCloud(context, ref),
+      ),
+    ],
   );
+
+  Future<bool> _configureGoogleOAuth(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final googleDrive = ref.read(cloudSyncServiceProvider).googleDrive;
+    final current = await googleDrive.loadClientConfig();
+    if (!context.mounted) return false;
+    final idController = TextEditingController(text: current.clientId);
+    final secretController = TextEditingController(text: current.clientSecret);
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('settingsGoogleOAuthTitle').tr(),
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'settingsGoogleOAuthHint'.tr(),
+                style: Theme.of(dialogContext).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: idController,
+                decoration: InputDecoration(
+                  labelText: 'settingsGoogleClientId'.tr(),
+                  hintText: 'xxxx.apps.googleusercontent.com',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: secretController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'settingsGoogleClientSecret'.tr(),
+                  helperText: 'settingsGoogleClientSecretHint'.tr(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('commonCancel').tr(),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('commonSave').tr(),
+          ),
+        ],
+      ),
+    );
+    final clientId = idController.text.trim();
+    final clientSecret = secretController.text.trim();
+    idController.dispose();
+    secretController.dispose();
+    if (saved != true) return false;
+    await googleDrive.saveClientConfig(
+      GoogleOAuthClientConfig(clientId: clientId, clientSecret: clientSecret),
+    );
+    if (context.mounted) {
+      _showMessage('settingsGoogleOAuthSaved'.tr());
+    }
+    return clientId.isNotEmpty;
+  }
+
+  Future<void> _signInWithGoogle(BuildContext context, WidgetRef ref) async {
+    try {
+      final service = ref.read(cloudSyncServiceProvider);
+      final config = await service.googleDrive.loadClientConfig();
+      if (!config.isConfigured) {
+        if (!context.mounted) return;
+        final configured = await _configureGoogleOAuth(context, ref);
+        if (!configured || !context.mounted) return;
+      }
+      await service.signIn(provider: CloudSyncProvider.googleDrive);
+      ref.invalidate(cloudUserProvider);
+      ref.invalidate(cloudWorkspacesProvider);
+    } on CloudSyncException catch (error) {
+      if (context.mounted) _showMessage(error.message);
+    } catch (_) {
+      if (context.mounted) _showMessage('commonSomethingWentWrong'.tr());
+    }
+  }
 
   Future<void> _signInToCloud(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(cloudSyncServiceProvider).signIn();
+      await ref
+          .read(cloudSyncServiceProvider)
+          .signIn(provider: CloudSyncProvider.solarpass);
       ref.invalidate(cloudUserProvider);
       ref.invalidate(cloudWorkspacesProvider);
     } on CloudSyncException catch (error) {

@@ -9,6 +9,18 @@ import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:uuid/uuid.dart';
 
 import '../shared/presentation/maidkit_alert.dart';
+import 'google_drive_sync_service.dart';
+
+/// Supported cloud account & encrypted vault sync providers.
+enum CloudSyncProvider {
+  solarpass,
+  googleDrive;
+
+  static CloudSyncProvider fromName(String? raw) => switch (raw) {
+    'googleDrive' => CloudSyncProvider.googleDrive,
+    _ => CloudSyncProvider.solarpass,
+  };
+}
 
 /// Configuration is deliberately opt-in and scoped to one local vault.
 class CloudSyncConfiguration {
@@ -18,6 +30,7 @@ class CloudSyncConfiguration {
     required this.workspaceSlug,
     required this.blobId,
     required this.revision,
+    this.provider = CloudSyncProvider.solarpass,
     this.pendingDownload = false,
     this.lastSyncedAt,
     this.lastContentFingerprint,
@@ -28,6 +41,7 @@ class CloudSyncConfiguration {
   final String workspaceSlug;
   final String blobId;
   final int revision;
+  final CloudSyncProvider provider;
   final bool pendingDownload;
   final DateTime? lastSyncedAt;
 
@@ -41,6 +55,7 @@ class CloudSyncConfiguration {
     'workspaceSlug': workspaceSlug,
     'blobId': blobId,
     'revision': revision,
+    'provider': provider.name,
     'pendingDownload': pendingDownload,
     'lastSyncedAt': lastSyncedAt?.toUtc().toIso8601String(),
     'lastContentFingerprint': lastContentFingerprint,
@@ -53,6 +68,7 @@ class CloudSyncConfiguration {
         workspaceSlug: json['workspaceSlug'] as String,
         blobId: json['blobId'] as String? ?? const Uuid().v4(),
         revision: (json['revision'] as num?)?.toInt() ?? 0,
+        provider: CloudSyncProvider.fromName(json['provider'] as String?),
         pendingDownload: json['pendingDownload'] == true,
         lastSyncedAt: DateTime.tryParse(
           json['lastSyncedAt'] as String? ?? '',
@@ -66,16 +82,19 @@ class CloudWorkspace {
     required this.id,
     required this.slug,
     required this.name,
+    this.provider = CloudSyncProvider.solarpass,
   });
 
   final String id;
   final String slug;
   final String name;
+  final CloudSyncProvider provider;
 
   factory CloudWorkspace.fromJson(Map<String, dynamic> json) => CloudWorkspace(
     id: json['id']?.toString() ?? '',
     slug: json['slug']?.toString() ?? '',
     name: json['name']?.toString() ?? 'Untitled workspace',
+    provider: CloudSyncProvider.fromName(json['provider'] as String?),
   );
 }
 
@@ -103,11 +122,17 @@ class CloudVaultBlob {
 }
 
 class CloudUser {
-  const CloudUser({required this.name, required this.handle, this.avatarUrl});
+  const CloudUser({
+    required this.name,
+    required this.handle,
+    this.avatarUrl,
+    this.provider = CloudSyncProvider.solarpass,
+  });
 
   final String name;
   final String handle;
   final String? avatarUrl;
+  final CloudSyncProvider provider;
 
   String get initials {
     final value = name.trim();
@@ -205,15 +230,23 @@ String _apiErrorMessage(DioException error) {
       : 'Solarpass request failed (HTTP $status).';
 }
 
-/// Solarpass authorization and Flywheel encrypted-blob transport.
+/// Cloud account authorization and encrypted-vault sync transport.
+/// Supports both Solarpass / Flywheel and Google Drive (`drive.appdata`).
 class CloudSyncService {
   CloudSyncService({
     required String vaultId,
     FlutterSecureStorage? secureStorage,
     Dio? dio,
+    GoogleDriveSyncService? googleDriveService,
   }) : _vaultKey = base64UrlEncode(utf8.encode(vaultId)),
        _storage = secureStorage ?? const FlutterSecureStorage(),
-       _dio = dio ?? Dio();
+       _dio = dio ?? Dio() {
+    googleDrive =
+        googleDriveService ??
+        GoogleDriveSyncService(secureStorage: _storage, dio: _dio);
+  }
+
+  late final GoogleDriveSyncService googleDrive;
 
   static const apiBase = 'https://api.solian.app';
   static const appId = 'dev.solsynth.maidkit';
@@ -254,6 +287,8 @@ class CloudSyncService {
   Future<void> disable() => _storage.delete(key: _configurationKey);
 
   Future<CloudUser?> currentUser() async {
+    final googleUser = await googleDrive.currentUser();
+    if (googleUser != null) return googleUser;
     final session = await _validSession();
     if (session == null) return null;
     // The accounts profile domain moved from Passport to Stargate; Blade
@@ -269,8 +304,15 @@ class CloudSyncService {
   /// The token remains in secure storage and is refreshed when necessary.
   Future<String?> accessToken() async => (await _validSession())?.accessToken;
 
-  Future<CloudUser> signIn() async {
+  Future<CloudUser> signIn({
+    CloudSyncProvider provider = CloudSyncProvider.solarpass,
+  }) async {
+    if (provider == CloudSyncProvider.googleDrive) {
+      await _storage.delete(key: _sessionKey);
+      return googleDrive.signIn();
+    }
     try {
+      await googleDrive.signOut();
       await _signIn();
       final user = await currentUser();
       if (user == null) {
@@ -283,15 +325,28 @@ class CloudSyncService {
   }
 
   Future<void> signOut() async {
+    await googleDrive.signOut();
     await _storage.delete(key: _sessionKey);
   }
 
   Future<List<CloudWorkspace>> listWorkspaces() async {
+    if (await googleDrive.hasSession()) {
+      return const [GoogleDriveSyncService.workspace];
+    }
     final session = await _validSession();
     return session == null ? const [] : _listWorkspaces(session);
   }
 
-  Future<List<CloudWorkspace>> signInAndListWorkspaces() async {
+  Future<List<CloudWorkspace>> signInAndListWorkspaces({
+    CloudSyncProvider? provider,
+  }) async {
+    if (provider == CloudSyncProvider.googleDrive ||
+        (provider == null && await googleDrive.hasSession())) {
+      if (!await googleDrive.hasSession()) {
+        await signIn(provider: CloudSyncProvider.googleDrive);
+      }
+      return const [GoogleDriveSyncService.workspace];
+    }
     try {
       final session = await _validSession();
       if (session == null) {
@@ -327,6 +382,9 @@ class CloudSyncService {
   }
 
   Future<List<CloudVaultBlob>> listVaultBlobs(CloudWorkspace workspace) async {
+    if (workspace.provider == CloudSyncProvider.googleDrive) {
+      return googleDrive.listVaultBlobs();
+    }
     try {
       final session = await _validSession();
       if (session == null) {
@@ -359,6 +417,34 @@ class CloudSyncService {
     CloudWorkspace workspace, {
     CloudVaultBlob? existingBlob,
   }) async {
+    if (workspace.provider == CloudSyncProvider.googleDrive) {
+      if (!await googleDrive.hasSession()) {
+        throw const CloudSyncException(
+          'Sign in with Google is required to enable Google Drive sync.',
+        );
+      }
+      final previous = await this.configuration();
+      final reuseCurrentBlob =
+          existingBlob == null &&
+          previous?.provider == CloudSyncProvider.googleDrive &&
+          previous?.workspaceId == workspace.id;
+      final configuration = CloudSyncConfiguration(
+        workspaceId: workspace.id,
+        workspaceName: workspace.name,
+        workspaceSlug: workspace.slug,
+        blobId:
+            existingBlob?.id ??
+            (reuseCurrentBlob ? previous!.blobId : const Uuid().v4()),
+        revision: reuseCurrentBlob ? previous!.revision : 0,
+        provider: CloudSyncProvider.googleDrive,
+        pendingDownload: existingBlob != null,
+        lastContentFingerprint: reuseCurrentBlob
+            ? previous!.lastContentFingerprint
+            : null,
+      );
+      await _saveConfiguration(configuration);
+      return configuration;
+    }
     try {
       final session = await _validSession();
       if (session == null) {
@@ -372,7 +458,9 @@ class CloudSyncService {
       );
       final previous = await this.configuration();
       final reuseCurrentBlob =
-          existingBlob == null && previous?.workspaceId == workspace.id;
+          existingBlob == null &&
+          previous?.provider == CloudSyncProvider.solarpass &&
+          previous?.workspaceId == workspace.id;
       final configuration = CloudSyncConfiguration(
         workspaceId: workspace.id,
         workspaceName: workspace.name,
@@ -381,6 +469,7 @@ class CloudSyncService {
             existingBlob?.id ??
             (reuseCurrentBlob ? previous!.blobId : const Uuid().v4()),
         revision: reuseCurrentBlob ? previous!.revision : 0,
+        provider: CloudSyncProvider.solarpass,
         pendingDownload: existingBlob != null,
         lastContentFingerprint: reuseCurrentBlob
             ? previous!.lastContentFingerprint
@@ -406,6 +495,7 @@ class CloudSyncService {
         workspaceSlug: configuration.workspaceSlug,
         blobId: configuration.blobId,
         revision: configuration.revision,
+        provider: configuration.provider,
         lastSyncedAt: configuration.lastSyncedAt,
         lastContentFingerprint: configuration.lastContentFingerprint,
       ),
@@ -438,6 +528,16 @@ class CloudSyncService {
     if (configuration == null) {
       throw const CloudSyncException(
         'Link this vault to a cloud workspace first.',
+      );
+    }
+    if (configuration.provider == CloudSyncProvider.googleDrive) {
+      return _syncGoogleDrive(
+        configuration: configuration,
+        archive: archive,
+        applyArchive: applyArchive,
+        contentFingerprint: contentFingerprint,
+        compareAndMergeArchive: compareAndMergeArchive,
+        conflictResolution: conflictResolution,
       );
     }
     try {
@@ -589,6 +689,81 @@ class CloudSyncService {
         : CloudSyncConflictResolution.overwriteRemote;
   }
 
+  Future<CloudSyncConfiguration> _syncGoogleDrive({
+    required CloudSyncConfiguration configuration,
+    required String archive,
+    required Future<void> Function(String archive) applyArchive,
+    Future<String> Function()? contentFingerprint,
+    CloudSyncArchiveComparator? compareAndMergeArchive,
+    CloudSyncConflictResolution? conflictResolution,
+  }) async {
+    var revision = configuration.revision;
+    var uploadArchive = archive;
+    final remoteFile = await googleDrive.findVaultFile(configuration.blobId);
+    final remoteRevision = remoteFile?.revision ?? 0;
+
+    if (remoteFile != null && remoteRevision > revision) {
+      final remoteArchive = await googleDrive.downloadArchive(
+        remoteFile.fileId,
+      );
+      final comparison = conflictResolution == null
+          ? await compareAndMergeArchive?.call(
+              localArchive: archive,
+              remoteArchive: remoteArchive,
+            )
+          : null;
+      if (comparison?.status == CloudSyncArchiveMergeStatus.identical) {
+        final updated = _updatedConfiguration(
+          configuration,
+          revision: remoteRevision,
+          contentFingerprint: await contentFingerprint?.call(),
+        );
+        await _saveConfiguration(updated);
+        return updated;
+      }
+      if (comparison?.status == CloudSyncArchiveMergeStatus.merged) {
+        uploadArchive = comparison!.archive!;
+        await applyArchive(uploadArchive);
+        revision = remoteRevision;
+      } else {
+        final resolution =
+            conflictResolution ?? await _resolveConflict(remoteRevision);
+        if (resolution == CloudSyncConflictResolution.downloadRemote) {
+          await applyArchive(remoteArchive);
+          final updated = _updatedConfiguration(
+            configuration,
+            revision: remoteRevision,
+            contentFingerprint: await contentFingerprint?.call(),
+          );
+          await _saveConfiguration(updated);
+          return updated;
+        }
+        revision = remoteRevision;
+      }
+    }
+
+    final fingerprint = await contentFingerprint?.call();
+    if (fingerprint != null &&
+        fingerprint == configuration.lastContentFingerprint &&
+        revision == configuration.revision) {
+      return configuration;
+    }
+
+    final savedRevision = await googleDrive.uploadArchive(
+      blobId: configuration.blobId,
+      archive: uploadArchive,
+      nextRevision: revision + 1,
+      existingFileId: remoteFile?.fileId,
+    );
+    final updated = _updatedConfiguration(
+      configuration,
+      revision: savedRevision,
+      contentFingerprint: fingerprint,
+    );
+    await _saveConfiguration(updated);
+    return updated;
+  }
+
   CloudSyncConfiguration _updatedConfiguration(
     CloudSyncConfiguration configuration, {
     required int revision,
@@ -599,6 +774,7 @@ class CloudSyncService {
     workspaceSlug: configuration.workspaceSlug,
     blobId: configuration.blobId,
     revision: revision,
+    provider: configuration.provider,
     pendingDownload: configuration.pendingDownload,
     lastSyncedAt: DateTime.now(),
     lastContentFingerprint:
