@@ -1,196 +1,97 @@
-# MaidKit
+# Server Manager
 
 <p align="center">
-  <img src="assets/icons/icon-padded.png" width="120" alt="MaidKit Logo">
-</p>
-
-<p align="center">
-  <b>A cross-platform SSH server manager</b>
+  <img src="assets/icons/icon-padded.png" width="120" alt="Server Manager icon">
 </p>
 
 <p align="center">
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License"></a>
-  <a href="https://solsynth.dev/zh/products/maid-kit#download"><img src="https://img.shields.io/badge/download-solsynth.dev-blue" alt="Download"></a>
+  <a href="https://github.com/Wind134/MaidKit/actions/workflows/build.yml"><img src="https://github.com/Wind134/MaidKit/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="README_ZH.md">简体中文</a>
 </p>
 
-<p align="center">
-  English · <a href="README_ZH.md">简体中文</a>
-</p>
+## About this repository
 
----
+This is an **independently maintained fork** of [Solsynth/MaidKit](https://github.com/Solsynth/MaidKit). The original program was created by LittleSheep and the Solsynth contributors and released under the GNU Affero General Public License v3.0.
 
-MaidKit is a collection of tools used by LittleSheep when acting as a "maid" for servers (i.e., performing server maintenance). The goal is to provide a more convenient way to maintain servers that is non-intrusive — being 100% SSH-based, without installing any software on the server or increasing security risks.
+This fork keeps the original copyright notices and the full `LICENSE.txt` intact, and every change made here stays under AGPL-3.0. Attribution to the original authors and contributors is preserved in the source and in this document.
 
-Built with Flutter, MaidKit runs on desktop and mobile platforms alike. Inspired by the [Island](https://github.com/Solsynth/HyperNet.Surface) project's desktop-native approach, it brings the same calm, functional philosophy to server administration.
+What is different from upstream:
 
----
+- Update checks and downloads now point to **this repository's** GitHub Releases
+- CI builds and publishes Windows, Linux and Android installers when a tag is pushed
+- Windows and Linux artifacts follow the `server_manager_{version}` naming rule; Android keeps per-architecture APKs
+- A flat, tech-oriented icon set is applied to every platform
+- An unreliable external git dependency is vendored as `packages/island_ui_foundation`
+- Android builds fall back to unsigned APKs when no signing secrets are configured
+- CI pins Flutter 3.47.9 to match the repository's Gradle / AGP versions
 
-## Table of Contents
+## What it does
 
-- [Features](#features)
-- [Getting Started](#getting-started)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Contributing](#contributing)
-- [Licensing](#licensing)
+A cross-platform server operations tool. Everything is done over SSH, so no agent software needs to be installed on the managed machines.
 
----
+### Servers and terminal
 
-## Features
+- Server cards with grouping, tags, sorting and custom environment variables, showing load, memory and uptime
+- Live CPU, memory, network and disk charts
+- SSH terminal with split panes, draggable tabs, a command palette and multiple color schemes
 
-### Servers
+### Files and system administration
 
-| Feature | Description |
-|---------|-------------|
-| Dashboard | Grid of server cards with live status, load, memory, and uptime; reorder via context menu, organize into groups, tag, and customize with environment variables |
-| Activity | Real-time performance charts (CPU, memory, network, disk) |
-| Terminal | Full SSH terminal with split panes, drag-and-drop tabs, command palette, and terminal color schemes |
-| File Management | Dual-pane SFTP browser with drag-and-drop transfers, in-app editor, and keyboard shortcuts (copy/cut/paste, rename, refresh, search, delete) |
-| Processes | List and kill running processes |
-| Services | Systemd unit management (start/stop/enable/disable) |
-| Web Servers | nginx and Caddy configuration management |
-| Crontab | Edit scheduled tasks |
-| Packages | Package management (apt, dnf, and more) |
-| Firewall | UFW, firewalld, nftables, and iptables management |
-| Port Forwarding | Local and remote tunnel configuration |
-| Proxy | Reach hosts through a per-server HTTP CONNECT or SOCKS5 proxy |
-| Tailscale | Connect over your tailnet with an embedded node — no Tailscale app required |
+- Dual-pane SFTP browser with drag-and-drop transfers, an inline editor and file-operation shortcuts
+- Process inspection and termination, systemd unit management
+- nginx and Caddy configuration editing, crontab editing
+- Package management (apt, dnf and others)
+- Firewall management (UFW, firewalld, nftables, iptables)
+- Local and remote port forwarding
+- Per-server HTTP CONNECT or SOCKS5 proxy support
+- Embedded Tailscale node, so no separate client is required
 
-### Containers
+### Containers and deployment
 
-- Docker and Podman container management
-- Start, stop, restart, pause, kill, and remove containers
-- Compose project grouping with detail view (per-service status, merged logs, lifecycle actions)
-- Container image management
-- Runtime installation assistance
+- Docker and Podman container operations: start, stop, restart, pause, kill, remove
+- Compose project grouping with service status, merged logs and lifecycle actions
+- Image management and runtime installation assistance
+- Deployment project catalog that groups compose stacks, web servers and containers, with TOML import/export
 
-### Projects
+### Scripts, AI and integrations
 
-- Deployment project catalog
-- Group compose stacks, web servers, and containers
-- Import and export as TOML
+- Reusable shell snippets that run on one or several connected servers with streamed output
+- A built-in AI agent that operates servers through tools, with your own provider or Solar Network AI
+- MCP servers and reusable skills extend the agent; proposed actions require approval before execution
+- GitHub device-flow sign-in for repositories, workflows, pull requests and releases
+- A local MCP server exposing your SSH servers, snippets and skills to other agents on the machine
 
-### Snippets
+### Security and preferences
 
-- Create and edit reusable shell scripts
-- Execute on one or more connected servers
-- Streaming output with progress tracking
+- Credentials stored in an AES-GCM 256 encrypted vault, with PBKDF2 key derivation (310,000 iterations)
+- Biometric unlock, encrypted backup archives (`.mkb`) and optional encrypted cloud sync
+- Theme, accent color, workspace background and English / Simplified Chinese interface
+- Terminal renderer choice (libghostty-vt / xterm), font and color scheme
+- Connect on startup, hide addresses while screen sharing, metrics refresh intervals and Tailscale settings
 
-### Agent
+## Getting started
 
-- Chat with an AI agent that can operate your servers through tools
-- Bring your own AI provider or use Solar Network AI
-- MCP servers and reusable skills extend the agent's toolset
-- Proposed actions require approval (review mode) before they run
-- Conversation history is stored on-device, outside the vault
+### Requirements
 
-### GitHub
+- Flutter SDK **3.47.9** (the version used by CI, matching Gradle 8.14 / AGP 8.12)
+- Windows development requires [NASM](https://www.nasm.us)
+- Linux development needs `ninja-build`, `libgtk-3-dev`, `libayatana-appindicator3-dev`, `keybinder-3.0`, `libnotify-dev` and related packages
 
-- Sign in with device-flow authorization
-- Pin repositories and follow workflow runs, pull requests, and releases
-- GitHub tools are available to the agent
-
-### Local MCP Server
-
-- Expose MaidKit's SSH servers, snippets, and skills to other agents on this machine through a local Model Context Protocol server
-- Connect from Claude Desktop or any MCP client
-
-### Security
-
-- AES-GCM 256-bit encrypted credential vault
-- PBKDF2 key derivation (310,000 iterations)
-- Biometric unlock support
-- Optional per-vault cloud sync over encrypted blobs (Solar Network)
-- Encrypted backup archives (.mkb)
-
-### Settings
-
-- Theme (system/light/dark), accent color, and workspace background image
-- Language (English / 简体中文)
-- Terminal renderer selection (Ghostty libghostty-vt or xterm), font, and color scheme
-- Connect on startup
-- Hide server addresses when screen sharing or recording
-- Metrics refresh intervals
-- Tailscale sign-in and connection settings
-- Cloud sync per vault, import and export of server connections
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- [Flutter SDK](https://flutter.dev) installed (SDK ^3.12.2)
-- For iOS App Store archives, install Zig 0.15.2 for the vendored Ghostty
-  terminal library. The current Ghostty source is not compatible with Zig 0.16:
-  ```bash
-  brew install zig@0.15
-  ```
-- For Windows development, install [NASM](https://www.nasm.us) (required by `webcrypto` native assets):
-  ```powershell
-  winget install NASM.NASM
-  ```
-- For Linux development, install additional dependencies:
-  ```bash
-  sudo apt-get update -y
-  sudo apt-get install -y \
-    ninja-build \
-    libgtk-3-dev \
-    libayatana-appindicator3-dev \
-    keybinder-3.0 \
-    libnotify-dev
-  ```
-
-### Running the App
+### Run
 
 ```bash
-# Install dependencies
 flutter pub get
-
-# Run in debug mode
 flutter run
-
-# Build release version
-flutter build <platform>
 ```
 
-### Linux AppImage
-
-Bundle a self-contained AppImage for Linux after building the release bundle:
+After changing route annotations or Drift schemas:
 
 ```bash
-flutter build linux
-bash buildtools/build-appimage.sh
+dart run build_runner build --delete-conflicting-outputs
 ```
 
-The script packs the x64 release bundle with the desktop entry and run helpers
-into `MaidKit-x86_64.AppImage`.
-
-### iOS App Store Archive
-
-The bundled Ghostty terminal library is compiled from source for iOS so the
-binary is linked by Apple's linker and includes the encryption metadata
-required by App Store Connect. After installing `zig@0.15`, the build hook
-selects it automatically when creating an IPA:
-
-```bash
-flutter clean
-flutter pub get
-flutter build ipa
-```
-
-The build stops if the generated Ghostty framework lacks
-`LC_ENCRYPTION_INFO_64`, preventing an invalid IPA from being produced.
-
-### Development
-
-After changing route annotations or Drift schema:
-
-```bash
-dart run build_runner build
-```
-
-Run checks before committing:
+Before committing:
 
 ```bash
 dart format lib test
@@ -198,66 +99,51 @@ flutter analyze
 flutter test
 ```
 
----
+### Build installers
 
-## Architecture
+```bash
+# Windows
+flutter build windows --release
 
-Features are flat and live directly under `lib/<feature>/`. The app uses:
+# Linux -> server_manager_<version>.AppImage
+flutter build linux --release
+bash buildtools/build-appimage.sh
 
-- **Riverpod** for state management with `ConsumerWidget` for reactive views
-- **auto_route** for declarative nested navigation
-- **Drift** for local SQLite persistence
-- **dartssh2** for SSH connections
-- **island_ui_foundation** for the desktop window frame
+# Android
+flutter build apk --release --split-per-abi
+```
+
+## Releases and updates
+
+Pushing a tag such as `1.0.0` triggers `.github/workflows/build.yml`: all three platforms build in parallel, then a GitHub Release is created and the installers are uploaded.
+
+- Windows: `server_manager_<version>.exe`
+- Linux: `server_manager_<version>.AppImage`
+- Android: `app-<arch>-release.apk`
+
+The client checks `api.github.com/repos/Wind134/MaidKit/releases/latest`, so publishing a newer tag is enough to notify existing users.
+
+> Android packages are currently unsigned. To enable signing, add `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS` and `ANDROID_KEYSTORE_PASSWORD` to the repository secrets; the pipeline will pick them up automatically.
+
+## Code layout
+
+Feature code lives directly under `lib/<feature>/` without extra `presentation` / `domain` / `data` layers.
+
+| Area | Technology |
+|------|------------|
+| UI | Flutter + Material 3 |
+| State | hooks_riverpod |
+| Navigation | auto_route |
+| Storage | Drift (SQLite) |
+| SSH | dartssh2 |
+| Cryptography | AES-GCM / PBKDF2 |
+| Terminal | libghostty-vt / xterm |
+| Desktop | window_manager + island_ui_foundation |
 
 See [docs/architecture.md](./docs/architecture.md) for the full architecture guide.
 
----
+## License and attribution
 
-## Tech Stack
+Released under the [GNU AGPL-3.0](./LICENSE.txt). Original copyright belongs to LittleSheep, Solsynth and the original contributors; changes in this fork are licensed under the same terms.
 
-| Layer | Technology |
-|-------|------------|
-| **Framework** | Flutter with Material 3 |
-| **State** | Riverpod + flutter_hooks |
-| **Navigation** | auto_route |
-| **Database** | Drift (SQLite) |
-| **SSH** | dartssh2 |
-| **Encryption** | cryptography (AES-GCM, PBKDF2) |
-| **Terminal** | libghostty-vt / xterm |
-| **Tailscale** | tailscale (embedded node, macOS/Linux) |
-| **MCP** | Model Context Protocol client + local server |
-| **Desktop** | window_manager + island_ui_foundation |
-
----
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit issues or pull requests.
-
----
-
-## Licensing
-
-This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
-
-This is an independently maintained fork of [Solynth/MaidKit](https://github.com/Solsynth/MaidKit). Original authorship and copyright remain with LittleSheep, Solsynth, and the original contributors; all existing copyright notices are retained. Modifications made in this fork are licensed under the same AGPL-3.0 terms.
-
-If you deploy an instance, fork this project, or redistribute modified versions of this software, you must comply with the AGPL-3.0 license terms, including:
-
-- Including a copy of the original license
-- Preserving existing copyright notices and attribution
-- Clearly stating any modifications you made
-- Providing corresponding source code to users interacting with the service over a network
-
-Original authorship and copyright attribution to LittleSheep, Solsynth, and this project's contributors must be retained where applicable.
-
-Please note that the AGPL-3.0 license applies to the software source code only. Certain assets, logos, icons, branding materials, and trademarks may be licensed separately and are not automatically covered under the same terms.
-
-See [LICENSE.txt](./LICENSE.txt) for the full license text.
-
----
-
-<p align="center">
-  Made by LittleSheep with ❤️
-</p>
+The license covers source code only. The upstream project name, logo and branding may be subject to separate licenses or trademark rights.

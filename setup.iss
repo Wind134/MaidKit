@@ -20,7 +20,7 @@ DefaultDirName={commonpf}\MaidKit
 UsePreviousAppDir=no
 
 OutputDir=.\Installer
-OutputBaseFilename=windows-x86_64-setup
+OutputBaseFilename=server_manager_{#AppVersion}
 SetupIconFile=.\assets\icons\icon.ico
 
 Compression=lzma2/ultra64
