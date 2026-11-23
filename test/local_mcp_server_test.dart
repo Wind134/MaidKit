@@ -84,7 +84,7 @@ void main() {
           'listChanged': false,
         });
         final serverInfo = result['serverInfo'] as Map<String, dynamic>;
-        expect(serverInfo['name'], 'MaidKit');
+        expect(serverInfo['name'], 'Server Manager');
       },
     );
 
@@ -204,7 +204,7 @@ void main() {
   });
 
   group('LocalMcpToolExecutor tool surface', () {
-    test('exposes the sixteen MaidKit resource tools', () {
+    test('exposes the sixteen Server Manager resource tools', () {
       final definitions = LocalMcpToolExecutor.definitions;
       final names = [for (final tool in definitions) tool['name']];
       expect(names, [
@@ -278,7 +278,7 @@ void main() {
       final body =
           jsonDecode(await response.transform(utf8.decoder).join())
               as Map<String, dynamic>;
-      expect(body['name'], 'MaidKit');
+      expect(body['name'], 'Server Manager');
       expect(body['status'], 'running');
       expect(body['tools'], contains('echo'));
     });

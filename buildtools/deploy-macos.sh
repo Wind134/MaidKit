@@ -6,7 +6,7 @@ PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 # Release configuration. Values may be overridden in .env or the environment.
-APP_NAME="${APP_NAME:-MaidKit}"
+APP_NAME="${APP_NAME:-server_manager}"
 CASK_NAME="${CASK_NAME:-maidkit}"
 RCLONE_REMOTE="${RCLONE_REMOTE:-r2}"
 S3_BUCKET="${S3_BUCKET:-solsynth-files}"
@@ -22,7 +22,7 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
   set +a
 
   # Re-read configurable values after loading .env.
-  APP_NAME="${APP_NAME:-MaidKit}"
+  APP_NAME="${APP_NAME:-server_manager}"
   CASK_NAME="${CASK_NAME:-maidkit}"
   RCLONE_REMOTE="${RCLONE_REMOTE:-r2}"
   S3_BUCKET="${S3_BUCKET:-solsynth-files}"
@@ -57,7 +57,7 @@ usage() {
   cat <<'EOF'
 Usage: ./buildtools/deploy-macos.sh [--no-build]
 
-Builds, signs, notarizes, packages, uploads, and publishes the MaidKit
+Builds, signs, notarizes, packages, uploads, and publishes the Server Manager
 Homebrew cask. Use --no-build only when the release app already exists.
 
 Configuration is read from the environment or the project .env file:

@@ -15,7 +15,7 @@ class VaultFileStorage {
 
   Future<String> createVaultPath({String? name}) async {
     final directory = await _vaultDirectory();
-    final stem = _safeStem(fileName(name ?? 'MaidKit vault'));
+    final stem = _safeStem(fileName(name ?? 'Server Manager vault'));
     return '${directory.path}/$stem-${_uuid.v4()}$_extension';
   }
 

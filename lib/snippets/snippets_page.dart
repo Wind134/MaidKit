@@ -258,7 +258,7 @@ class _SnippetEditorState extends ConsumerState<_SnippetEditor> {
               decoration: InputDecoration(
                 labelText: 'snippetsScript'.tr(),
                 alignLabelWithHint: true,
-                hintText: '#!/bin/sh\necho "Hello from MaidKit"',
+                hintText: '#!/bin/sh\necho "Hello from Server Manager"',
               ),
               validator: (value) => value == null || value.trim().isEmpty
                   ? 'commonRequired'.tr()

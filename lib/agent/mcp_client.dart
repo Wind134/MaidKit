@@ -193,7 +193,7 @@ class McpClient {
     await _request('initialize', const {
       'protocolVersion': mcpProtocolVersion,
       'capabilities': <String, Object?>{},
-      'clientInfo': {'name': 'MaidKit', 'version': '1.0.0'},
+      'clientInfo': {'name': 'Server Manager', 'version': '1.0.0'},
     }, timeout: initializeTimeout);
     _initialized = true;
     // No reply is expected; the notification is the spec's handshake end.

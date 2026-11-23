@@ -229,7 +229,7 @@ class ProjectRepository {
         .select(_database.deploymentResources)
         .get();
     final buffer = StringBuffer(
-      '# MaidKit deployment catalog\nformat_version = 1\n',
+      '# Server Manager deployment catalog\nformat_version = 1\n',
     );
     for (final project in projects) {
       buffer
@@ -368,7 +368,7 @@ List<DeploymentProjectBundle> _parseToml(String source) {
   }
   commitProject();
   if (projects.isEmpty) {
-    throw const FormatException('No MaidKit projects found in TOML.');
+    throw const FormatException('No Server Manager projects found in TOML.');
   }
   return projects;
 }

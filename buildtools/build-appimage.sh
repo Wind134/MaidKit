@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="MaidKit.AppDir"
+APP_DIR="server_manager.AppDir"
 APPIMAGE_TOOL="buildtools/appimagetool-x86_64.AppImage"
 APP_VERSION=$(grep -E '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
 APPIMAGE_NAME="server_manager_${APP_VERSION}.AppImage"

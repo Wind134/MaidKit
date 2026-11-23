@@ -1269,7 +1269,7 @@ class _AgentPageState extends ConsumerState<AgentPage> {
                   .firstOrNull ??
               'agentUnavailableServer'.tr()
         : pendingProposal.serverId == null
-        ? 'MaidKit'
+        ? 'Server Manager'
         : servers
                   .where((server) => server.id == pendingProposal.serverId)
                   .map((server) => server.name)

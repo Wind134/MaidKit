@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Maid Kit</string>
+	<string>server_manager</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>MaidKit</string>
+	<string>server_manager</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -39,7 +39,7 @@
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>MaidKit Backup</string>
+			<string>Server Manager Backup</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>LSHandlerRank</key>
@@ -55,13 +55,13 @@
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
-	<string>MaidKit uses the camera only when you choose to capture an image to attach to content managed in the app.</string>
+	<string>Server Manager uses the camera only when you choose to capture an image to attach to content managed in the app.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Explain why your app needs Face ID access here.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>MaidKit uses your location only when you choose to include location metadata with an image you capture.</string>
+	<string>Server Manager uses your location only when you choose to include location metadata with an image you capture.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>MaidKit accesses your photo library only when you choose an image to attach to content managed in the app.</string>
+	<string>Server Manager accesses your photo library only when you choose an image to attach to content managed in the app.</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
@@ -70,7 +70,7 @@
 				<string>public.data</string>
 			</array>
 			<key>UTTypeDescription</key>
-			<string>MaidKit Backup</string>
+			<string>Server Manager Backup</string>
 			<key>UTTypeIdentifier</key>
 			<string>dev.solsynth.maidkit.backup</string>
 			<key>UTTypeTagSpecification</key>

@@ -268,7 +268,7 @@ class SshConnectionManager {
       // instead of displaying the server's allocated /dev/pts/* path.
       shell.write(
         utf8.encode(
-          'export TERM_PROGRAM=MaidKit; unset SSH_CONNECTION SSH_TTY\n',
+          'export TERM_PROGRAM=ServerManager; unset SSH_CONNECTION SSH_TTY\n',
         ),
       );
     }
@@ -3678,7 +3678,7 @@ uname -r
       },
       handshakeTimeout: const Duration(seconds: 15),
       authTimeout: const Duration(seconds: 15),
-      ident: "MaidKit",
+      ident: "Server Manager",
     );
     await client.authenticated;
     return client;

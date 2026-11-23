@@ -147,7 +147,7 @@ class LocalMcpProtocolHandler {
           'capabilities': const {
             'tools': {'listChanged': false},
           },
-          'serverInfo': const {'name': 'MaidKit', 'version': '1.0.0'},
+          'serverInfo': const {'name': 'Server Manager', 'version': '1.0.0'},
         });
       case 'ping':
         return _result(id, const <String, Object?>{});
@@ -352,7 +352,7 @@ class LocalMcpServer {
       ..headers.set('Content-Type', 'application/json');
     response.write(
       jsonEncode({
-        'name': 'MaidKit',
+        'name': 'Server Manager',
         'status': 'running',
         'tools': [
           for (final tool in await executor.toolDefinitions) tool['name'],

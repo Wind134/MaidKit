@@ -6,17 +6,17 @@
 #define FullVersion AppVersion + "." + BuildNumber
 
 [Setup]
-AppName=MaidKit
+AppName=server_manager
 AppVersion={#AppVersion}
 AppPublisher=dev.solsynth
 AppPublisherURL=https://solsynth.dev
 AppUpdatesURL=https://github.com/Wind134/MaidKit/releases
 AppCopyright=Copyright © 2026 dev.solsynth
 VersionInfoVersion={#FullVersion}
-UninstallDisplayName=MaidKit
-UninstallDisplayIcon={app}\maid_kit.exe
+UninstallDisplayName=server_manager
+UninstallDisplayIcon={app}\server_manager.exe
 
-DefaultDirName={commonpf}\MaidKit
+DefaultDirName={commonpf}\server_manager
 UsePreviousAppDir=no
 
 OutputDir=.\Installer
@@ -35,17 +35,17 @@ PrivilegesRequired=admin
 Source: ".\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\MaidKit"; Filename: "{app}\maid_kit.exe"; IconFilename: "{app}\maid_kit.exe"
-Name: "{group}\{cm:UninstallProgram,MaidKit}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\MaidKit"; Filename: "{app}\maid_kit.exe"; Tasks: desktopicon
+Name: "{group}\server_manager"; Filename: "{app}\server_manager.exe"; IconFilename: "{app}\server_manager.exe"
+Name: "{group}\{cm:UninstallProgram,server_manager}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\server_manager"; Filename: "{app}\server_manager.exe"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Run]
-Filename: "{app}\maid_kit.exe"; Description: "Launch MaidKit"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\server_manager.exe"; Description: "Launch server_manager"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{userappdata}\dev.solsynth\MaidKit"
-Type: files; Name: "{group}\MaidKit.lnk"
-Type: files; Name: "{autodesktop}\MaidKit.lnk"
+Type: filesandordirs; Name: "{userappdata}\dev.solsynth\server_manager"
+Type: files; Name: "{group}\server_manager.lnk"
+Type: files; Name: "{autodesktop}\server_manager.lnk"

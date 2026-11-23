@@ -178,7 +178,7 @@ class VaultService {
     }
     try {
       final authenticated = await authentication.authenticate(
-        localizedReason: 'Unlock your MaidKit vault',
+        localizedReason: 'Unlock your Server Manager vault',
         biometricOnly: true,
       );
       if (!authenticated) {
@@ -208,7 +208,7 @@ class VaultService {
     }
     try {
       final authenticated = await authentication.authenticate(
-        localizedReason: 'Enable biometric unlock for MaidKit',
+        localizedReason: 'Enable biometric unlock for Server Manager',
         biometricOnly: true,
       );
       if (!authenticated) {

@@ -33,7 +33,7 @@ class MaidKitWindowScaffold extends ConsumerWidget {
       child: DesktopWindowFrame(
         isDesktopPlatform: isDesktop,
         title: Text(
-          title ?? 'MaidKit',
+          title ?? 'Server Manager',
           style: Theme.of(context).textTheme.labelLarge,
         ),
         // Routes own their safe areas. Consuming mobile insets here prevents

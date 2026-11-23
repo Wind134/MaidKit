@@ -99,11 +99,11 @@ class DatabaseBackupService {
   Map<String, dynamic> _decodePayload(String clearText) {
     final value = jsonDecode(clearText);
     if (value is! Map) {
-      throw const FormatException('Unsupported MaidKit backup.');
+      throw const FormatException('Unsupported Server Manager backup.');
     }
     final payload = Map<String, dynamic>.from(value);
     if (payload['version'] != _formatVersion) {
-      throw const FormatException('Unsupported MaidKit backup.');
+      throw const FormatException('Unsupported Server Manager backup.');
     }
     // Export timestamps describe the snapshot, not syncable content.
     payload.remove('createdAt');
@@ -361,7 +361,7 @@ class DatabaseBackupService {
     final payload = jsonDecode(clearText);
     if (payload is! Map<String, dynamic> ||
         payload['version'] != _formatVersion) {
-      throw const FormatException('Unsupported MaidKit backup.');
+      throw const FormatException('Unsupported Server Manager backup.');
     }
 
     final servers = _records(payload, 'servers');

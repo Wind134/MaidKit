@@ -282,12 +282,12 @@ class SshAgentService {
       OpenAIFunctionProperty.string(name: 'path', isRequired: true),
       _safeToRunProperty,
     ]),
-    _tool('create_snippet', 'Save a reusable POSIX shell snippet in MaidKit', [
+    _tool('create_snippet', 'Save a reusable POSIX shell snippet in Server Manager', [
       OpenAIFunctionProperty.string(name: 'name', isRequired: true),
       OpenAIFunctionProperty.string(name: 'script', isRequired: true),
       _safeToRunProperty,
     ]),
-    _tool('run_snippet', 'Run a saved MaidKit snippet on the selected server', [
+    _tool('run_snippet', 'Run a saved Server Manager snippet on the selected server', [
       OpenAIFunctionProperty.integer(name: 'server_id', isRequired: true),
       OpenAIFunctionProperty.integer(name: 'snippet_id', isRequired: true),
       _safeToRunProperty,
@@ -579,7 +579,7 @@ class SshAgentService {
         ? '\nNever reveal server IP addresses, hostnames, or ports in your chat replies, even if you know them from earlier in the conversation or from tool results. Refer to servers by name only. Real addresses are fine inside tool call arguments, but never in the text you reply with.'
         : '';
     return '''
-You are MaidKit's SSH management assistant. Respond in the user's current UI language: $_uiLanguage. Available servers are:
+You are Server Manager's SSH management assistant. Respond in the user's current UI language: $_uiLanguage. Available servers are:
 $serverList
 Saved snippets are:
 ${snippets.isEmpty ? '(none)' : snippets.map((snippet) => snippet.description).join('\n')}
