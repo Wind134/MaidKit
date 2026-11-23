@@ -163,7 +163,8 @@ jobs:
           } > android/key.properties
       - run: flutter pub get
       - run: dart run build_runner build --delete-conflicting-outputs
-      - run: flutter build apk --release --split-per-abi
+      # CargoKit 不兼容 Gradle 9，绕过 Flutter 3.50 的 Gradle 版本校验
+      - run: flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
       - name: Normalize Android artifact names
         run: |
           mkdir -p ./android-release
