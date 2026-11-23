@@ -39,7 +39,7 @@ jobs:
         with:
           channel: stable
           # 与仓库的 Gradle 8.14 / AGP 8.12 及依赖约束保持一致
-          version: "3.47.9"
+          flutter-version: "3.47.9"
           cache: true
       - run: flutter pub get
       # 修正 Windows 构建依赖：cargokit 隐藏目录问题与 tailscale 的 GOCACHE 缺失
@@ -89,7 +89,7 @@ jobs:
         with:
           channel: stable
           # 与仓库的 Gradle 8.14 / AGP 8.12 及依赖约束保持一致
-          version: "3.47.9"
+          flutter-version: "3.47.9"
           cache: true
       - name: Install dependencies
         run: |
@@ -147,7 +147,7 @@ jobs:
         with:
           channel: stable
           # 与仓库的 Gradle 8.14 / AGP 8.12 及依赖约束保持一致
-          version: "3.47.9"
+          flutter-version: "3.47.9"
           cache: true
       - name: Configure Android signing
         env:
