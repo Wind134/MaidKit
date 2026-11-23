@@ -173,11 +173,13 @@ jobs:
       - name: Normalize Android artifact names
         run: |
           mkdir -p ./android-release
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
           for f in build/app/outputs/flutter-apk/app-*-release*.apk; do
             [ -f "$f" ] || continue
             name=$(basename "$f" .apk)
             name=${name%-unsigned}
             cp "$f" "./android-release/$name.apk"
+            "$APKSIGNER" verify --verbose "./android-release/$name.apk"
           done
           ls -la ./android-release
       - name: Archive Android artifacts

@@ -12,7 +12,7 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
-// 无签名密钥时构建未签名包，避免 CI 在配置阶段直接失败
+// 有正式签名配置时使用 release 签名，否则本地构建回退到 debug 签名以保证 APK 可安装
 val hasReleaseSigning = keystorePropertiesFile.exists() &&
     keystoreProperties["keyAlias"] != null &&
     keystoreProperties["storeFile"] != null
@@ -51,8 +51,10 @@ android {
 
     buildTypes {
         release {
-            if (hasReleaseSigning) {
-                signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
             }
         }
     }
