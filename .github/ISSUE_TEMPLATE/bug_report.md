@@ -28,7 +28,7 @@ assignees: ''
 
 ## Environment
 - OS:
-- MaidKit Version:
+- Server Manager Version:
 - Branch or Commit:
 
 ## Additional Context

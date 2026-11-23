@@ -21,7 +21,7 @@ class ImportedConnection {
     this.environment = const {},
     this.tags = const [],
     this.serialConfig,
-    this.source = 'MaidKit',
+    this.source = 'Server Manager',
   });
 
   final String name;

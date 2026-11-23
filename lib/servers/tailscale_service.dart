@@ -41,7 +41,7 @@ class TailscaleService {
   final TailscaleClient _client;
 
   /// Hostname this app's node uses on the tailnet.
-  static const hostname = 'MaidKit';
+  static const hostname = 'ServerManager';
 
   /// Brings the node up. [authKey] is required on first registration; later
   /// launches reconnect from persisted credentials without it.

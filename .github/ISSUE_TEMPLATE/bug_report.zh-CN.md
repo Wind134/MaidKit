@@ -28,7 +28,7 @@ assignees: ''
 
 ## 环境
 - 操作系统:
-- MaidKit 版本:
+- Server Manager 版本:
 - 分支或提交:
 
 ## 其他上下文

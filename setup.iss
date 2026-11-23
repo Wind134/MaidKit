@@ -6,17 +6,18 @@
 #define FullVersion AppVersion + "." + BuildNumber
 
 [Setup]
-AppName=server_manager
+AppId=MaidKit
+AppName=Server Manager
 AppVersion={#AppVersion}
 AppPublisher=dev.solsynth
 AppPublisherURL=https://solsynth.dev
 AppUpdatesURL=https://github.com/Wind134/MaidKit/releases
 AppCopyright=Copyright © 2026 dev.solsynth
 VersionInfoVersion={#FullVersion}
-UninstallDisplayName=server_manager
+UninstallDisplayName=Server Manager
 UninstallDisplayIcon={app}\server_manager.exe
 
-DefaultDirName={commonpf}\server_manager
+DefaultDirName={commonpf}\Server Manager
 UsePreviousAppDir=no
 
 OutputDir=.\Installer
@@ -35,17 +36,17 @@ PrivilegesRequired=admin
 Source: ".\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\server_manager"; Filename: "{app}\server_manager.exe"; IconFilename: "{app}\server_manager.exe"
-Name: "{group}\{cm:UninstallProgram,server_manager}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\server_manager"; Filename: "{app}\server_manager.exe"; Tasks: desktopicon
+Name: "{group}\Server Manager"; Filename: "{app}\server_manager.exe"; IconFilename: "{app}\server_manager.exe"
+Name: "{group}\{cm:UninstallProgram,Server Manager}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\Server Manager"; Filename: "{app}\server_manager.exe"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Run]
-Filename: "{app}\server_manager.exe"; Description: "Launch server_manager"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\server_manager.exe"; Description: "Launch Server Manager"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{userappdata}\dev.solsynth\server_manager"
-Type: files; Name: "{group}\server_manager.lnk"
-Type: files; Name: "{autodesktop}\server_manager.lnk"
+Type: filesandordirs; Name: "{userappdata}\dev.solsynth\Server Manager"
+Type: files; Name: "{group}\Server Manager.lnk"
+Type: files; Name: "{autodesktop}\Server Manager.lnk"

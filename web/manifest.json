@@ -1,6 +1,6 @@
 {
-    "name": "server_manager",
-    "short_name": "server_manager",
+    "name": "Server Manager",
+    "short_name": "Server Manager",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",

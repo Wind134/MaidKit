@@ -19,6 +19,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:process_run/process_run.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Outcome of an update check.
+enum UpdateCheckStatus { updateAvailable, upToDate, failed, disabled }
+
 /// Data model for a GitHub release we care about
 class GithubReleaseInfo {
   final String tagName;
@@ -149,12 +152,18 @@ class UpdateService {
   /// Checks GitHub for the latest release and compares it against the current
   /// app version. If an update is available, shows a bottom sheet with the
   /// changelog and an action to open the release page.
-  Future<void> checkForUpdates(BuildContext context) async {
+  ///
+  /// When [silent] is false (manual check), shows feedback when already up to
+  /// date or when the check fails.
+  Future<UpdateCheckStatus> checkForUpdates(
+    BuildContext context, {
+    bool silent = true,
+  }) async {
     if (!kEnableBuiltInUpdate) {
       Logger.root.info(
         '[Update] Built-in update is disabled via kEnableBuiltInUpdate',
       );
-      return;
+      return UpdateCheckStatus.disabled;
     }
     Logger.root.info('[Update] Checking for updates...');
     try {
@@ -163,7 +172,10 @@ class UpdateService {
         Logger.root.info(
           '[Update] No latest release found or could not fetch.',
         );
-        return;
+        if (!silent && context.mounted) {
+          showSnackBar('updateCheckFailed'.tr());
+        }
+        return UpdateCheckStatus.failed;
       }
       Logger.root.info('[Update] Fetched latest release: ${release.tagName}');
 
@@ -179,8 +191,10 @@ class UpdateService {
           '[Update] Failed to parse versions. Latest: ${release.tagName}, '
           'Local: $localVersionStr',
         );
-        // If parsing fails, do nothing silently
-        return;
+        if (!silent && context.mounted) {
+          showSnackBar('updateCheckFailed'.tr());
+        }
+        return UpdateCheckStatus.failed;
       }
       Logger.root.info(
         '[Update] Parsed versions. Latest: $latest, Local: $local',
@@ -189,7 +203,10 @@ class UpdateService {
       final needsUpdate = latest.compareTo(local) > 0;
       if (!needsUpdate) {
         Logger.root.info('[Update] App is up to date. No update needed.');
-        return;
+        if (!silent && context.mounted) {
+          showSnackBar('updateUpToDate'.tr(args: [info.version]));
+        }
+        return UpdateCheckStatus.upToDate;
       }
       Logger.root.info(
         '[Update] Update available! Latest: $latest, Local: $local',
@@ -199,7 +216,7 @@ class UpdateService {
         Logger.root.info(
           '[Update] Context not mounted, cannot show update sheet.',
         );
-        return;
+        return UpdateCheckStatus.updateAvailable;
       }
 
       // Delay to ensure UI is ready (if called at startup)
@@ -209,10 +226,13 @@ class UpdateService {
         await showUpdateSheet(context, release);
         Logger.root.info('[Update] Update sheet shown.');
       }
+      return UpdateCheckStatus.updateAvailable;
     } catch (e) {
       Logger.root.severe('[Update] Error checking for updates: $e');
-      // Ignore errors (network, api, etc.)
-      return;
+      if (!silent && context.mounted) {
+        showSnackBar('updateCheckFailed'.tr());
+      }
+      return UpdateCheckStatus.failed;
     }
   }
 

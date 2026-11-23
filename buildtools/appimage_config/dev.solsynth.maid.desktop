@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=server_manager
+Name=Server Manager
 GenericName=Multi-Server Management Platform
 Comment=Manage servers over SSH with a calm, desktop-native interface
 

@@ -300,7 +300,9 @@ class ConnectionImportService {
   Map<String, dynamic> _decodeDocument(String content) {
     final decoded = jsonDecode(content);
     if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Not a MaidKit connections JSON file.');
+      throw const FormatException(
+        'Not a Server Manager connections JSON file.',
+      );
     }
     if (decoded['format'] != ConnectionExportService.formatName) {
       throw const FormatException('Unsupported connections file format.');

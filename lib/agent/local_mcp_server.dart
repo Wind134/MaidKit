@@ -445,7 +445,7 @@ class LocalMcpToolExecutor implements LocalMcpToolInvoker {
     {
       'name': 'list_servers',
       'description':
-          'List the SSH servers configured in MaidKit. Returns id, name, '
+          'List the SSH servers configured in Server Manager. Returns id, name, '
           'host, port, and username for each server. Use the returned id as '
           'server_id for other tools.',
       'inputSchema': {'type': 'object', 'properties': <String, dynamic>{}},
@@ -533,13 +533,13 @@ class LocalMcpToolExecutor implements LocalMcpToolInvoker {
     {
       'name': 'list_snippets',
       'description':
-          'List the reusable shell snippets saved in MaidKit. Returns id and '
+          'List the reusable shell snippets saved in Server Manager. Returns id and '
           'name for each snippet; read the full script with get_snippet.',
       'inputSchema': {'type': 'object', 'properties': <String, dynamic>{}},
     },
     {
       'name': 'get_snippet',
-      'description': 'Read the full script of a saved MaidKit snippet.',
+      'description': 'Read the full script of a saved Server Manager snippet.',
       'inputSchema': {
         'type': 'object',
         'properties': {
@@ -554,7 +554,7 @@ class LocalMcpToolExecutor implements LocalMcpToolInvoker {
     {
       'name': 'create_snippet',
       'description':
-          'Save a reusable POSIX shell snippet in MaidKit. '
+          'Save a reusable POSIX shell snippet in Server Manager. '
           'Requires user approval.',
       'inputSchema': {
         'type': 'object',
@@ -574,7 +574,7 @@ class LocalMcpToolExecutor implements LocalMcpToolInvoker {
     {
       'name': 'run_snippet',
       'description':
-          'Run a saved MaidKit snippet on a server. Requires user approval.',
+          'Run a saved Server Manager snippet on a server. Requires user approval.',
       'inputSchema': {
         'type': 'object',
         'properties': {
@@ -593,7 +593,7 @@ class LocalMcpToolExecutor implements LocalMcpToolInvoker {
     {
       'name': 'list_skills',
       'description':
-          'List the reusable expertise packs (skills) saved in MaidKit. '
+          'List the reusable expertise packs (skills) saved in Server Manager. '
           'Returns id, name, description, and enabled for each skill.',
       'inputSchema': {'type': 'object', 'properties': <String, dynamic>{}},
     },
@@ -957,7 +957,7 @@ class LocalMcpToolExecutor implements LocalMcpToolInvoker {
       await Process.run('osascript', [
         '-e',
         'display notification ${_osascriptQuoted(detail)} '
-            'with title ${_osascriptQuoted('MaidKit — ${proposal.title}')}',
+            'with title ${_osascriptQuoted('Server Manager — ${proposal.title}')}',
       ]);
     } catch (_) {
       // A failed notification must never block or fail the approval flow.

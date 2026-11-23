@@ -3678,7 +3678,7 @@ uname -r
       },
       handshakeTimeout: const Duration(seconds: 15),
       authTimeout: const Duration(seconds: 15),
-      ident: "Server Manager",
+      ident: "ServerManager",
     );
     await client.authenticated;
     return client;
