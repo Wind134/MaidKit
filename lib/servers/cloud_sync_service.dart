@@ -338,10 +338,9 @@ class CloudSyncService {
   }
 
   Future<List<CloudWorkspace>> signInAndListWorkspaces({
-    CloudSyncProvider? provider,
+    CloudSyncProvider provider = CloudSyncProvider.googleDrive,
   }) async {
-    if (provider == CloudSyncProvider.googleDrive ||
-        (provider == null && await googleDrive.hasSession())) {
+    if (provider == CloudSyncProvider.googleDrive) {
       if (!await googleDrive.hasSession()) {
         await signIn(provider: CloudSyncProvider.googleDrive);
       }

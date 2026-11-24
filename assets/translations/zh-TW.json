@@ -1,5 +1,6 @@
 {
   "ServerName": "伺服器",
+  "aboutAcknowledgments": "致謝原版 MaidKit 作者 LittleSheep 及開源社群貢獻者。",
   "aboutAppInfo": "應用資訊",
   "aboutBuild": "構建號",
   "aboutCopyright": "© {} Solsynth",
@@ -1178,6 +1179,7 @@
   "settingsGoogleOAuthHint": "請在 Google Cloud Console 建立桌面應用 OAuth 2.0 客戶端 ID 並啟用 Google Drive API。金庫將在本地加密後同步到你的 Google Drive 私有應用目錄。",
   "settingsGoogleOAuthSaved": "已儲存 Google OAuth 設定。",
   "settingsGoogleOAuthTitle": "Google OAuth 設定",
+  "settingsGoogleOpenConsole": "前往 Google Cloud Console 申請客戶端 ID",
   "settingsGoogleSignIn": "使用 Google 登入",
   "settingsGoogleSignInHint": "將加密金庫同步到你自己的 Google Drive 私有應用目錄。",
   "settingsHideServerAddresses": "隱藏伺服器地址",
@@ -1441,7 +1443,7 @@
   "vaultCreateAction": "建立金庫",
   "vaultCreateFileAction": "建立新的保險庫檔案",
   "vaultCreateFromCloudAction": "登入 Solarpass 並下載雲端工作區",
-  "vaultCreateFromCloudHint": "登入 Solarpass 並下載雲端儲存的保險庫。",
+  "vaultCreateFromCloudHint": "使用 Google 帳號登入並下載儲存在私有 Google Drive 應用目錄中的加密金庫。",
   "vaultCreateImportAction": "匯入連線",
   "vaultCreateImportCreate": "建立並匯入",
   "vaultCreateImportHint": "建立保險庫，並從 Server Manager 匯出或其他 SSH 客戶端恢復連線。",

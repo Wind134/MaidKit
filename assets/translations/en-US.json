@@ -1,5 +1,6 @@
 {
   "ServerName": "Server",
+  "aboutAcknowledgments": "Thanks to LittleSheep and the original MaidKit contributors.",
   "aboutAppInfo": "Application",
   "aboutBuild": "Build",
   "aboutCopyright": "© {} Solsynth",
@@ -1178,6 +1179,7 @@
   "settingsGoogleOAuthHint": "Create a Desktop OAuth 2.0 Client ID in Google Cloud Console and enable the Google Drive API. Vault files are stored encrypted in the private appDataFolder.",
   "settingsGoogleOAuthSaved": "Google OAuth settings saved.",
   "settingsGoogleOAuthTitle": "Google OAuth configuration",
+  "settingsGoogleOpenConsole": "Open Google Cloud Console (Credentials)",
   "settingsGoogleSignIn": "Sign in with Google",
   "settingsGoogleSignInHint": "Sync encrypted vaults to your private Google Drive app folder.",
   "settingsHideServerAddresses": "Hide server addresses",
@@ -1441,7 +1443,7 @@
   "vaultCreateAction": "Create vault",
   "vaultCreateFileAction": "Create a new vault file",
   "vaultCreateFromCloudAction": "Sign in to Solarpass and download a workspace",
-  "vaultCreateFromCloudHint": "Sign in to Solarpass and download vaults saved to the cloud.",
+  "vaultCreateFromCloudHint": "Sign in with Google and download encrypted vaults saved in your private Google Drive app folder.",
   "vaultCreateImportAction": "Import connections",
   "vaultCreateImportCreate": "Create and import",
   "vaultCreateImportHint": "Create a vault and restore connections from Server Manager exports or other SSH clients.",

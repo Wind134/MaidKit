@@ -515,50 +515,70 @@ class _TaskProgressSheet extends ConsumerWidget {
         : 'taskProgressTransfersCount'.tr(args: ['$activeCount']);
     final colorScheme = Theme.of(context).colorScheme;
 
+    final isFloating = MediaQuery.sizeOf(context).width > 600;
     return SafeArea(
-      child: FractionallySizedBox(
-        heightFactor: 0.56,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 12, 8),
-              child: Row(
-                children: [
-                  Icon(Symbols.sync, size: 20, color: colorScheme.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: MaterialLocalizations.of(context).closeButtonLabel,
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Symbols.close),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: tasks.isEmpty
-                  ? Center(
-                      child: Text(
-                        'taskProgressNoTransfers'.tr(),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+      child: Padding(
+        padding: isFloating ? const EdgeInsets.all(24) : EdgeInsets.zero,
+        child: Material(
+          color: colorScheme.surfaceContainerLow,
+          surfaceTintColor: Colors.transparent,
+          elevation: isFloating ? 6 : 0,
+          shadowColor: Colors.black.withValues(alpha: 0.24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: isFloating
+                ? BorderRadius.circular(20)
+                : const BorderRadius.vertical(top: Radius.circular(24)),
+            side: isFloating
+                ? BorderSide(color: colorScheme.outlineVariant)
+                : BorderSide.none,
+          ),
+          child: FractionallySizedBox(
+            heightFactor: 0.56,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 12, 8),
+                  child: Row(
+                    children: [
+                      Icon(Symbols.sync, size: 20, color: colorScheme.primary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: tasks.length,
-                      itemBuilder: (context, index) =>
-                          _TaskProgressListTile(task: tasks[index]),
-                    ),
+                      IconButton(
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).closeButtonLabel,
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Symbols.close),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: tasks.isEmpty
+                      ? Center(
+                          child: Text(
+                            'taskProgressNoTransfers'.tr(),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          itemCount: tasks.length,
+                          itemBuilder: (context, index) =>
+                              _TaskProgressListTile(task: tasks[index]),
+                        ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

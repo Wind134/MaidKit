@@ -43,18 +43,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('shows the Solar Network ad section', (tester) async {
+  testWidgets('shows copyright and original author acknowledgment', (
+    tester,
+  ) async {
     await pumpAboutPage(tester);
 
-    // The ad section sits below the fold; the about ListView builds lazily.
     await tester.scrollUntilVisible(
-      find.text('aboutOtherWorks'.tr()),
+      find.text('aboutAcknowledgments'.tr()),
       200,
       scrollable: find.byType(Scrollable).first,
     );
 
-    expect(find.text('aboutOtherWorks'.tr()), findsOneWidget);
-    expect(find.text('aboutSolianName'.tr()), findsOneWidget);
-    expect(find.text('aboutSeeMore'.tr()), findsOneWidget);
+    expect(find.text('aboutAcknowledgments'.tr()), findsOneWidget);
+    expect(find.text('aboutOtherWorks'.tr()), findsNothing);
   });
 }

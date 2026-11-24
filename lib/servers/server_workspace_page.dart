@@ -13,6 +13,7 @@ import 'package:maid_kit/shared/presentation/app_scaffold.dart';
 import 'package:styled_widget/styled_widget.dart';
 import 'port_forwarding_models.dart';
 import 'server_providers.dart';
+import 'settings_page.dart';
 import 'terminal_tabs_provider.dart';
 
 @RoutePage()
@@ -88,7 +89,15 @@ class _ServerTabsShell extends ConsumerWidget {
                             const DeploySessionsRailButton(),
                             const SizedBox(height: 8),
                             _CloudAccountRailButton(
-                              onPressed: () => tabsRouter.setActiveIndex(5),
+                              onPressed: () {
+                                tabsRouter.setActiveIndex(5);
+                                ref
+                                    .read(
+                                      settingsAccountScrollTriggerProvider
+                                          .notifier,
+                                    )
+                                    .trigger();
+                              },
                             ),
                             IconButton(
                               tooltip: 'tabSettings'.tr(),

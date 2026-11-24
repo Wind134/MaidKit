@@ -13,6 +13,7 @@ import 'package:island_ui_foundation/island_ui_foundation.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:styled_widget/styled_widget.dart';
 import 'package:system_fonts/system_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:maid_kit/data/local/app_database.dart';
 import 'package:maid_kit/agent/agent_personality.dart';
@@ -37,12 +38,50 @@ import 'terminal_adapter_preferences.dart';
 import 'terminal_color_scheme.dart';
 import 'vault_service.dart';
 
+class SettingsAccountScrollNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void trigger() => state++;
+}
+
+final settingsAccountScrollTriggerProvider =
+    NotifierProvider<SettingsAccountScrollNotifier, int>(
+      SettingsAccountScrollNotifier.new,
+    );
+
 @RoutePage()
-class SettingsPage extends ConsumerWidget {
+class SettingsPage extends HookConsumerWidget {
   const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final scrollController = useScrollController();
+    final accountSectionKey = useMemoized(GlobalKey.new);
+    final lastHandledTrigger = useRef(0);
+
+    void scrollToAccount() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final targetContext = accountSectionKey.currentContext;
+        if (targetContext == null || !targetContext.mounted) return;
+        Scrollable.ensureVisible(
+          targetContext,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOut,
+          alignment: 0.15,
+        );
+      });
+    }
+
+    final currentTrigger = ref.watch(settingsAccountScrollTriggerProvider);
+    useEffect(() {
+      if (currentTrigger > lastHandledTrigger.value) {
+        lastHandledTrigger.value = currentTrigger;
+        scrollToAccount();
+      }
+      return null;
+    }, [currentTrigger]);
+
     final themeMode = ref.watch(themeModeProvider);
     final appSeedColor = ref.watch(appSeedColorProvider);
     final biometricEnabled = ref.watch(biometricUnlockEnabledProvider);
@@ -89,479 +128,859 @@ class SettingsPage extends ConsumerWidget {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
-          child: ListView(
+          child: SingleChildScrollView(
+            controller: scrollController,
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-            children: [
-              Text(
-                'settingsTitle',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ).tr(),
-              const SizedBox(height: 8),
-              Text(
-                'settingsDescription',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ).tr(),
-              const SizedBox(height: 32),
-              _SettingsSection(
-                titleKey: 'settingsAppearance',
-                padding: EdgeInsets.zero,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('settingsTheme').tr(),
-                          const SizedBox(height: 4),
-                          Text(
-                            'settingsThemeDescription',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ).tr(),
-                          const SizedBox(height: 12),
-                          SegmentedButton<ThemeMode>(
-                            segments: [
-                              ButtonSegment(
-                                value: ThemeMode.system,
-                                label: Text('settingsThemeSystem'.tr()),
-                                icon: const Icon(Symbols.brightness_auto),
-                              ),
-                              ButtonSegment(
-                                value: ThemeMode.light,
-                                label: Text('settingsThemeLight'.tr()),
-                                icon: const Icon(Symbols.light_mode),
-                              ),
-                              ButtonSegment(
-                                value: ThemeMode.dark,
-                                label: Text('settingsThemeDark'.tr()),
-                                icon: const Icon(Symbols.dark_mode),
-                              ),
-                            ],
-                            selected: {themeMode},
-                            onSelectionChanged: (selection) {
-                              ref
-                                  .read(themeModeProvider.notifier)
-                                  .setThemeMode(selection.first);
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          _SeedColorTile(
-                            seedColor: appSeedColor,
-                            onEdit: () => _editSeedColor(context, ref),
-                          ),
-                          const SizedBox(height: 16),
-                          const _LanguageSwitcher(),
-                        ],
-                      ),
-                    ),
-                    if (!kIsWeb) ...[
-                      const SizedBox(height: 24),
-                      SwitchListTile(
-                        contentPadding: _sectionTilePadding,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: _sectionTileBorderRadius(
-                            _SettingsTilePosition.only,
-                          ),
-                        ),
-                        title: const Text('settingsBackgroundImage').tr(),
-                        subtitle: Text(
-                          backgroundImage.asData?.value == null
-                              ? 'settingsBackgroundImageNone'.tr()
-                              : 'settingsBackgroundImageHint'.tr(),
-                        ),
-                        value: backgroundImageEnabled.asData?.value ?? true,
-                        onChanged: backgroundImage.asData?.value == null
-                            ? null
-                            : (enabled) => setMaidKitBackgroundImageEnabled(
-                                ref,
-                                enabled,
-                              ),
-                      ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'settingsTitle',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ).tr(),
+                const SizedBox(height: 8),
+                Text(
+                  'settingsDescription',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ).tr(),
+                const SizedBox(height: 32),
+                _SettingsSection(
+                  titleKey: 'settingsAppearance',
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Padding(
-                        padding: _sectionTilePadding,
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            OutlinedButton.icon(
-                              onPressed: () =>
-                                  _selectBackgroundImage(context, ref),
-                              icon: const Icon(Symbols.image),
-                              label: const Text(
-                                'settingsBackgroundImageChoose',
-                              ).tr(),
+                            const Text('settingsTheme').tr(),
+                            const SizedBox(height: 4),
+                            Text(
+                              'settingsThemeDescription',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ).tr(),
+                            const SizedBox(height: 12),
+                            SegmentedButton<ThemeMode>(
+                              segments: [
+                                ButtonSegment(
+                                  value: ThemeMode.system,
+                                  label: Text('settingsThemeSystem'.tr()),
+                                  icon: const Icon(Symbols.brightness_auto),
+                                ),
+                                ButtonSegment(
+                                  value: ThemeMode.light,
+                                  label: Text('settingsThemeLight'.tr()),
+                                  icon: const Icon(Symbols.light_mode),
+                                ),
+                                ButtonSegment(
+                                  value: ThemeMode.dark,
+                                  label: Text('settingsThemeDark'.tr()),
+                                  icon: const Icon(Symbols.dark_mode),
+                                ),
+                              ],
+                              selected: {themeMode},
+                              onSelectionChanged: (selection) {
+                                ref
+                                    .read(themeModeProvider.notifier)
+                                    .setThemeMode(selection.first);
+                              },
                             ),
-                            if (backgroundImage.asData?.value != null)
-                              TextButton.icon(
-                                onPressed: () =>
-                                    _clearBackgroundImage(context, ref),
-                                icon: const Icon(Symbols.delete_outline),
-                                label: const Text(
-                                  'settingsBackgroundImageClear',
-                                ).tr(),
-                              ),
+                            const SizedBox(height: 16),
+                            _SeedColorTile(
+                              seedColor: appSeedColor,
+                              onEdit: () => _editSeedColor(context, ref),
+                            ),
+                            const SizedBox(height: 16),
+                            const _LanguageSwitcher(),
                           ],
                         ),
+                      ),
+                      if (!kIsWeb) ...[
+                        const SizedBox(height: 24),
+                        SwitchListTile(
+                          contentPadding: _sectionTilePadding,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: _sectionTileBorderRadius(
+                              _SettingsTilePosition.only,
+                            ),
+                          ),
+                          title: const Text('settingsBackgroundImage').tr(),
+                          subtitle: Text(
+                            backgroundImage.asData?.value == null
+                                ? 'settingsBackgroundImageNone'.tr()
+                                : 'settingsBackgroundImageHint'.tr(),
+                          ),
+                          value: backgroundImageEnabled.asData?.value ?? true,
+                          onChanged: backgroundImage.asData?.value == null
+                              ? null
+                              : (enabled) => setMaidKitBackgroundImageEnabled(
+                                  ref,
+                                  enabled,
+                                ),
+                        ),
+                        Padding(
+                          padding: _sectionTilePadding,
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () =>
+                                    _selectBackgroundImage(context, ref),
+                                icon: const Icon(Symbols.image),
+                                label: const Text(
+                                  'settingsBackgroundImageChoose',
+                                ).tr(),
+                              ),
+                              if (backgroundImage.asData?.value != null)
+                                TextButton.icon(
+                                  onPressed: () =>
+                                      _clearBackgroundImage(context, ref),
+                                  icon: const Icon(Symbols.delete_outline),
+                                  label: const Text(
+                                    'settingsBackgroundImageClear',
+                                  ).tr(),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          contentPadding: _sectionTilePadding,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: _sectionTileBorderRadius(
+                              _SettingsTilePosition.only,
+                            ),
+                          ),
+                          title: const Text('settingsTerminalTransparent').tr(),
+                          subtitle: const Text(
+                            'settingsTerminalTransparentHint',
+                          ).tr(),
+                          value:
+                              transparentTerminalBackground.asData?.value ??
+                              false,
+                          onChanged:
+                              backgroundImage.asData?.value == null ||
+                                  !(backgroundImageEnabled.asData?.value ??
+                                      true)
+                              ? null
+                              : (enabled) =>
+                                    setTransparentTerminalBackgroundEnabled(
+                                      ref,
+                                      enabled,
+                                    ),
+                        ),
+                      ],
+                      if (DesktopWindowFrame.isPlatformDesktop) ...[
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'settingsWindowOpacity',
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ).tr(),
+                              const SizedBox(height: 4),
+                              Text(
+                                'settingsWindowOpacityHint',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ).tr(),
+                              Slider(
+                                value: windowOpacity.asData?.value ?? 1.0,
+                                min: 0.4,
+                                max: 1.0,
+                                divisions: 12,
+                                label:
+                                    '${((windowOpacity.asData?.value ?? 1.0) * 100).round()}%',
+                                onChanged: (value) =>
+                                    setMaidKitWindowOpacity(ref, value),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _SettingsSection(
+                  titleKey: 'settingsTerminal',
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DropdownButtonFormField<String>(
+                              initialValue: selectedAdapterOption.id,
+                              decoration: InputDecoration(
+                                labelText: 'settingsTerminalRenderer'.tr(),
+                              ),
+                              items: [
+                                for (final option in adapterOptions)
+                                  DropdownMenuItem(
+                                    value: option.id,
+                                    child: Text(option.label),
+                                  ),
+                              ],
+                              onChanged: adapterOptions.length < 2
+                                  ? null
+                                  : (adapterId) async {
+                                      if (adapterId != null) {
+                                        await ref
+                                            .read(
+                                              selectedTerminalSessionAdapterProvider
+                                                  .notifier,
+                                            )
+                                            .select(adapterId);
+                                      }
+                                    },
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              selectedAdapterOption.description,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'settingsTerminalRendererHint',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ).tr(),
+                            const SizedBox(height: 16),
+                            const _TerminalFontDropdown(),
+                            const SizedBox(height: 16),
+                            _TerminalThemeTile(
+                              mode: Brightness.light,
+                              theme: terminalLightTheme,
+                              onEdit: () => _editTerminalTheme(
+                                context,
+                                ref,
+                                brightness: Brightness.light,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _TerminalThemeTile(
+                              mode: Brightness.dark,
+                              theme: terminalDarkTheme,
+                              onEdit: () => _editTerminalTheme(
+                                context,
+                                ref,
+                                brightness: Brightness.dark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SwitchListTile(
+                        contentPadding: _sectionTilePadding,
+                        title: const Text('settingsAnimateCursor').tr(),
+                        subtitle: const Text('settingsAnimateCursorHint').tr(),
+                        value: cursorAnimationEnabled,
+                        onChanged: selectedAdapter == 'ghostty'
+                            ? (enabled) async {
+                                await ref
+                                    .read(
+                                      cursorAnimationEnabledProvider.notifier,
+                                    )
+                                    .setEnabled(enabled);
+                              }
+                            : null,
                       ),
                       const SizedBox(height: 8),
                       SwitchListTile(
                         contentPadding: _sectionTilePadding,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: _sectionTileBorderRadius(
-                            _SettingsTilePosition.only,
-                          ),
-                        ),
-                        title: const Text('settingsTerminalTransparent').tr(),
-                        subtitle: const Text(
-                          'settingsTerminalTransparentHint',
+                        title: const Text(
+                          'settingsTerminalBrandingEnvironment',
                         ).tr(),
-                        value:
-                            transparentTerminalBackground.asData?.value ??
-                            false,
-                        onChanged:
-                            backgroundImage.asData?.value == null ||
-                                !(backgroundImageEnabled.asData?.value ?? true)
-                            ? null
-                            : (enabled) =>
-                                  setTransparentTerminalBackgroundEnabled(
-                                    ref,
-                                    enabled,
-                                  ),
+                        subtitle: const Text(
+                          'settingsTerminalBrandingEnvironmentHint',
+                        ).tr(),
+                        value: brandingEnvironmentEnabled,
+                        onChanged: (enabled) => ref
+                            .read(
+                              terminalBrandingEnvironmentEnabledProvider
+                                  .notifier,
+                            )
+                            .setEnabled(enabled),
                       ),
                     ],
-                    if (DesktopWindowFrame.isPlatformDesktop) ...[
-                      const SizedBox(height: 16),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _SettingsSection(
+                  titleKey: 'settingsConnections',
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        contentPadding: _sectionTilePadding,
+                        title: const Text('settingsConnectOnStartup').tr(),
+                        subtitle: const Text(
+                          'settingsConnectOnStartupHint',
+                        ).tr(),
+                        value: connectOnStartup,
+                        onChanged: (value) => ref
+                            .read(connectOnStartupProvider.notifier)
+                            .setEnabled(value),
+                      ),
+                      SwitchListTile(
+                        contentPadding: _sectionTilePadding,
+                        title: const Text('settingsHideServerAddresses').tr(),
+                        subtitle: const Text(
+                          'settingsHideServerAddressesHint',
+                        ).tr(),
+                        value: hideServerAddresses,
+                        onChanged: (value) => ref
+                            .read(hideServerAddressesProvider.notifier)
+                            .setEnabled(value),
+                      ),
+                      if (localMachineSupported) ...[
+                        SwitchListTile(
+                          contentPadding: _sectionTilePadding,
+                          title: const Text('settingsLocalMachine').tr(),
+                          subtitle: const Text('settingsLocalMachineHint').tr(),
+                          value: localMachineEnabled,
+                          onChanged: (value) => ref
+                              .read(localMachineEnabledProvider.notifier)
+                              .setEnabled(value),
+                        ),
+                      ],
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'settingsWindowOpacity',
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ).tr(),
-                            const SizedBox(height: 4),
-                            Text(
-                              'settingsWindowOpacityHint',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ).tr(),
-                            Slider(
-                              value: windowOpacity.asData?.value ?? 1.0,
-                              min: 0.4,
-                              max: 1.0,
-                              divisions: 12,
-                              label:
-                                  '${((windowOpacity.asData?.value ?? 1.0) * 100).round()}%',
-                              onChanged: (value) =>
-                                  setMaidKitWindowOpacity(ref, value),
+                            const SizedBox(height: 12),
+                            _IntervalDropdown(
+                              labelKey: 'settingsBackgroundRefreshInterval',
+                              helperKey:
+                                  'settingsBackgroundRefreshIntervalHint',
+                              value: refreshInterval,
+                              options: _refreshIntervals,
+                              fallback: _refreshIntervals[1],
+                              onChanged: (interval) {
+                                ref
+                                    .read(
+                                      serverMetricsRefreshIntervalProvider
+                                          .notifier,
+                                    )
+                                    .setInterval(interval);
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            _IntervalDropdown(
+                              labelKey: 'settingsFocusedRefreshInterval',
+                              helperKey: 'settingsFocusedRefreshIntervalHint',
+                              value: focusedRefreshInterval,
+                              options: _focusedRefreshIntervals,
+                              fallback: _focusedRefreshIntervals.first,
+                              onChanged: (interval) {
+                                ref
+                                    .read(
+                                      focusedServerRefreshIntervalProvider
+                                          .notifier,
+                                    )
+                                    .setInterval(interval);
+                              },
                             ),
                           ],
                         ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              _SettingsSection(
-                titleKey: 'settingsTerminal',
-                padding: EdgeInsets.zero,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
+                const SizedBox(height: 24),
+                _SettingsSection(
+                  titleKey: 'settingsTailscale',
+                  padding: EdgeInsets.zero,
+                  child: const TailscaleSettingsSection(),
+                ),
+                const SizedBox(height: 24),
+                _SettingsSection(
+                  titleKey: 'settingsAgent',
+                  padding: EdgeInsets.zero,
+                  child: runPolicyAsync.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: LinearProgressIndicator(),
+                    ),
+                    error: (error, _) => Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(error.toString()),
+                    ),
+                    data: (policy) => Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          DropdownButtonFormField<String>(
-                            initialValue: selectedAdapterOption.id,
-                            decoration: InputDecoration(
-                              labelText: 'settingsTerminalRenderer'.tr(),
-                            ),
-                            items: [
-                              for (final option in adapterOptions)
-                                DropdownMenuItem(
-                                  value: option.id,
-                                  child: Text(option.label),
+                          const Text('settingsAgentRunPolicy').tr(),
+                          const SizedBox(height: 4),
+                          Text(
+                            'settingsAgentRunPolicyHint',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ).tr(),
+                          const SizedBox(height: 12),
+                          SegmentedButton<AgentRunPolicy>(
+                            showSelectedIcon: false,
+                            segments: [
+                              for (final mode in AgentRunPolicy.values)
+                                ButtonSegment(
+                                  value: mode,
+                                  label: Text(mode.labelKey.tr()),
+                                  tooltip: mode.descriptionKey.tr(),
                                 ),
                             ],
-                            onChanged: adapterOptions.length < 2
-                                ? null
-                                : (adapterId) async {
-                                    if (adapterId != null) {
-                                      await ref
-                                          .read(
-                                            selectedTerminalSessionAdapterProvider
-                                                .notifier,
-                                          )
-                                          .select(adapterId);
-                                    }
-                                  },
+                            selected: {policy},
+                            onSelectionChanged: (selection) {
+                              ref
+                                  .read(agentRunPolicyProvider.notifier)
+                                  .setPolicy(selection.first);
+                            },
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            selectedAdapterOption.description,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'settingsTerminalRendererHint',
+                            policy.descriptionKey.tr(),
                             style: Theme.of(context).textTheme.bodySmall,
-                          ).tr(),
-                          const SizedBox(height: 16),
-                          const _TerminalFontDropdown(),
-                          const SizedBox(height: 16),
-                          _TerminalThemeTile(
-                            mode: Brightness.light,
-                            theme: terminalLightTheme,
-                            onEdit: () => _editTerminalTheme(
-                              context,
-                              ref,
-                              brightness: Brightness.light,
-                            ),
                           ),
-                          const SizedBox(height: 12),
-                          _TerminalThemeTile(
-                            mode: Brightness.dark,
-                            theme: terminalDarkTheme,
-                            onEdit: () => _editTerminalTheme(
-                              context,
-                              ref,
-                              brightness: Brightness.dark,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SwitchListTile(
-                      contentPadding: _sectionTilePadding,
-                      title: const Text('settingsAnimateCursor').tr(),
-                      subtitle: const Text('settingsAnimateCursorHint').tr(),
-                      value: cursorAnimationEnabled,
-                      onChanged: selectedAdapter == 'ghostty'
-                          ? (enabled) async {
-                              await ref
-                                  .read(cursorAnimationEnabledProvider.notifier)
-                                  .setEnabled(enabled);
-                            }
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
-                    SwitchListTile(
-                      contentPadding: _sectionTilePadding,
-                      title: const Text(
-                        'settingsTerminalBrandingEnvironment',
-                      ).tr(),
-                      subtitle: const Text(
-                        'settingsTerminalBrandingEnvironmentHint',
-                      ).tr(),
-                      value: brandingEnvironmentEnabled,
-                      onChanged: (enabled) => ref
-                          .read(
-                            terminalBrandingEnvironmentEnabledProvider.notifier,
-                          )
-                          .setEnabled(enabled),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              _SettingsSection(
-                titleKey: 'settingsConnections',
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      contentPadding: _sectionTilePadding,
-                      title: const Text('settingsConnectOnStartup').tr(),
-                      subtitle: const Text('settingsConnectOnStartupHint').tr(),
-                      value: connectOnStartup,
-                      onChanged: (value) => ref
-                          .read(connectOnStartupProvider.notifier)
-                          .setEnabled(value),
-                    ),
-                    SwitchListTile(
-                      contentPadding: _sectionTilePadding,
-                      title: const Text('settingsHideServerAddresses').tr(),
-                      subtitle: const Text(
-                        'settingsHideServerAddressesHint',
-                      ).tr(),
-                      value: hideServerAddresses,
-                      onChanged: (value) => ref
-                          .read(hideServerAddressesProvider.notifier)
-                          .setEnabled(value),
-                    ),
-                    if (localMachineSupported) ...[
-                      SwitchListTile(
-                        contentPadding: _sectionTilePadding,
-                        title: const Text('settingsLocalMachine').tr(),
-                        subtitle: const Text('settingsLocalMachineHint').tr(),
-                        value: localMachineEnabled,
-                        onChanged: (value) => ref
-                            .read(localMachineEnabledProvider.notifier)
-                            .setEnabled(value),
-                      ),
-                    ],
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 12),
-                          _IntervalDropdown(
-                            labelKey: 'settingsBackgroundRefreshInterval',
-                            helperKey: 'settingsBackgroundRefreshIntervalHint',
-                            value: refreshInterval,
-                            options: _refreshIntervals,
-                            fallback: _refreshIntervals[1],
-                            onChanged: (interval) {
-                              ref
-                                  .read(
-                                    serverMetricsRefreshIntervalProvider
-                                        .notifier,
-                                  )
-                                  .setInterval(interval);
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          _IntervalDropdown(
-                            labelKey: 'settingsFocusedRefreshInterval',
-                            helperKey: 'settingsFocusedRefreshIntervalHint',
-                            value: focusedRefreshInterval,
-                            options: _focusedRefreshIntervals,
-                            fallback: _focusedRefreshIntervals.first,
-                            onChanged: (interval) {
-                              ref
-                                  .read(
-                                    focusedServerRefreshIntervalProvider
-                                        .notifier,
-                                  )
-                                  .setInterval(interval);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              _SettingsSection(
-                titleKey: 'settingsTailscale',
-                padding: EdgeInsets.zero,
-                child: const TailscaleSettingsSection(),
-              ),
-              const SizedBox(height: 24),
-              _SettingsSection(
-                titleKey: 'settingsAgent',
-                padding: EdgeInsets.zero,
-                child: runPolicyAsync.when(
-                  loading: () => const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: LinearProgressIndicator(),
-                  ),
-                  error: (error, _) => Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(error.toString()),
-                  ),
-                  data: (policy) => Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text('settingsAgentRunPolicy').tr(),
-                        const SizedBox(height: 4),
-                        Text(
-                          'settingsAgentRunPolicyHint',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ).tr(),
-                        const SizedBox(height: 12),
-                        SegmentedButton<AgentRunPolicy>(
-                          showSelectedIcon: false,
-                          segments: [
-                            for (final mode in AgentRunPolicy.values)
-                              ButtonSegment(
-                                value: mode,
-                                label: Text(mode.labelKey.tr()),
-                                tooltip: mode.descriptionKey.tr(),
+                          agentPersonalityAsync.when(
+                            loading: () => const LinearProgressIndicator(),
+                            error: (error, _) => Text(error.toString()),
+                            data: (personality) => ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text(
+                                'settingsAgentPersonality',
+                              ).tr(),
+                              subtitle: Text(
+                                personality.isEmpty
+                                    ? 'settingsAgentPersonalityHint'.tr()
+                                    : personality,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                          ],
-                          selected: {policy},
-                          onSelectionChanged: (selection) {
-                            ref
-                                .read(agentRunPolicyProvider.notifier)
-                                .setPolicy(selection.first);
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          policy.descriptionKey.tr(),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        agentPersonalityAsync.when(
-                          loading: () => const LinearProgressIndicator(),
-                          error: (error, _) => Text(error.toString()),
-                          data: (personality) => ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('settingsAgentPersonality').tr(),
-                            subtitle: Text(
-                              personality.isEmpty
-                                  ? 'settingsAgentPersonalityHint'.tr()
-                                  : personality,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            trailing: const Icon(Symbols.chevron_right),
-                            onTap: () => _editAgentPersonality(
-                              context,
-                              ref,
-                              personality,
+                              trailing: const Icon(Symbols.chevron_right),
+                              onTap: () => _editAgentPersonality(
+                                context,
+                                ref,
+                                personality,
+                              ),
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _SettingsSection(
+                  titleKey: 'settingsLocalMcpServer',
+                  padding: EdgeInsets.zero,
+                  child: const _LocalMcpServerSection(),
+                ),
+                const SizedBox(height: 24),
+                _SettingsSection(
+                  titleKey: 'settingsSecurity',
+                  padding: EdgeInsets.zero,
+                  child: biometricEnabled.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: LinearProgressIndicator(),
+                    ),
+                    error: (error, _) => Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'settingsBiometricError'.tr(args: [error.toString()]),
+                      ),
+                    ),
+                    data: (enabled) => Column(
+                      children: [
+                        SwitchListTile(
+                          contentPadding: _sectionTilePadding,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: _sectionTileBorderRadius(
+                              _SettingsTilePosition.first,
+                            ),
+                          ),
+                          title: const Text('settingsBiometricUnlock').tr(),
+                          subtitle: const Text(
+                            'settingsBiometricUnlockHint',
+                          ).tr(),
+                          value: enabled,
+                          onChanged: (value) =>
+                              _setBiometricUnlock(context, ref, value),
+                        ),
+                        ListTile(
+                          contentPadding: _sectionTilePadding,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: _sectionTileBorderRadius(
+                              _SettingsTilePosition.last,
+                            ),
+                          ),
+                          leading: const Icon(Symbols.password),
+                          title: const Text('settingsVaultChangePassword').tr(),
+                          subtitle: const Text(
+                            'settingsVaultChangePasswordHint',
+                          ).tr(),
+                          trailing: const Icon(Symbols.chevron_right),
+                          onTap: () => _changeVaultPassword(context, ref),
                         ),
                       ],
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              _SettingsSection(
-                titleKey: 'settingsLocalMcpServer',
-                padding: EdgeInsets.zero,
-                child: const _LocalMcpServerSection(),
-              ),
-              const SizedBox(height: 24),
-              _SettingsSection(
-                titleKey: 'settingsSecurity',
-                padding: EdgeInsets.zero,
-                child: biometricEnabled.when(
-                  loading: () => const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: LinearProgressIndicator(),
+                const SizedBox(height: 24),
+                _SettingsSection(
+                  titleKey: 'settingsAbout',
+                  padding: EdgeInsets.zero,
+                  child: ListTile(
+                    contentPadding: _sectionTilePadding,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: _sectionTileBorderRadius(
+                        _SettingsTilePosition.only,
+                      ),
+                    ),
+                    leading: const Icon(Symbols.info),
+                    title: Text('aboutTitle'.tr()),
+                    subtitle: Text('settingsAboutHint'.tr()),
+                    trailing: const Icon(Symbols.chevron_right),
+                    onTap: () => context.router.push(const AboutRoute()),
                   ),
-                  error: (error, _) => Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'settingsBiometricError'.tr(args: [error.toString()]),
+                ),
+                const SizedBox(height: 24),
+                _SettingsSection(
+                  key: accountSectionKey,
+                  titleKey: 'settingsAccount',
+                  padding: EdgeInsets.zero,
+                  child: cloudUser.when(
+                    loading: () => ListTile(
+                      contentPadding: _sectionTilePadding,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: _sectionTileBorderRadius(
+                          _SettingsTilePosition.only,
+                        ),
+                      ),
+                      leading: const CircleAvatar(child: Icon(Symbols.person)),
+                      title: const Text('…'),
+                    ),
+                    error: (_, _) => _cloudLoginTile(context, ref),
+                    data: (user) => user == null
+                        ? _cloudLoginTile(context, ref)
+                        : Column(
+                            children: [
+                              ListTile(
+                                contentPadding: _sectionTilePadding,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: _sectionTileBorderRadius(
+                                    _SettingsTilePosition.only,
+                                  ),
+                                ),
+                                leading: _CloudAvatar(user: user),
+                                title: Text(user.name),
+                                subtitle: user.handle.isEmpty
+                                    ? null
+                                    : Text(user.handle),
+                                trailing: IconButton(
+                                  icon: const Icon(Symbols.logout),
+                                  tooltip: 'settingsCloudSignOut'.tr(),
+                                  onPressed: () =>
+                                      _signOutFromCloud(context, ref),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+                if (cloudUser.asData?.value?.provider ==
+                    CloudSyncProvider.solarpass) ...[
+                  const SizedBox(height: 24),
+                  _SettingsSection(
+                    titleKey: 'settingsSolarNetworkAi',
+                    padding: EdgeInsets.zero,
+                    child: billingPolicyAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: LinearProgressIndicator(),
+                      ),
+                      error: (error, _) => Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'settingsBillingError'.tr(args: [error.toString()]),
+                        ),
+                      ),
+                      data: (policy) => policy == null
+                          ? const SizedBox.shrink()
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (policy.blacklisted)
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      12,
+                                      16,
+                                      0,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.errorContainer,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Symbols.warning_amber,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'settingsBillingBlacklisted'.tr(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    16,
+                                    16,
+                                    0,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'settingsAgentPersonalityAgent',
+                                      ).tr(),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'settingsAgentPersonalityAgentHint',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium,
+                                      ).tr(),
+                                      const SizedBox(height: 12),
+                                      agentPersonalityAgentAsync.when(
+                                        loading: () =>
+                                            const LinearProgressIndicator(),
+                                        error: (error, _) =>
+                                            Text(error.toString()),
+                                        data: (agentId) =>
+                                            _PersonalityAgentDropdown(
+                                              agentId: agentId,
+                                              agents:
+                                                  personalityAgentsAsync
+                                                      .asData
+                                                      ?.value ??
+                                                  const [],
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('settingsBillingUsage').tr(),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'settingsBillingUsageHint',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium,
+                                      ).tr(),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                ListTile(
+                                  contentPadding: _sectionTilePadding,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: _sectionTileBorderRadius(
+                                      _SettingsTilePosition.first,
+                                    ),
+                                  ),
+                                  title: const Text(
+                                    'settingsBillingHourlyGolds',
+                                  ).tr(),
+                                  trailing: _UsageTrailing(
+                                    usage: policy.hourlyGolds,
+                                  ),
+                                ),
+                                ListTile(
+                                  contentPadding: _sectionTilePadding,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: _sectionTileBorderRadius(
+                                      _SettingsTilePosition.middle,
+                                    ),
+                                  ),
+                                  title: const Text(
+                                    'settingsBillingHourlyBits',
+                                  ).tr(),
+                                  trailing: _UsageTrailing(
+                                    usage: policy.hourlyPoints,
+                                  ),
+                                ),
+                                ListTile(
+                                  contentPadding: _sectionTilePadding,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: _sectionTileBorderRadius(
+                                      _SettingsTilePosition.middle,
+                                    ),
+                                  ),
+                                  title: const Text(
+                                    'settingsBillingDailyGolds',
+                                  ).tr(),
+                                  trailing: _UsageTrailing(
+                                    usage: policy.dailyGolds,
+                                  ),
+                                ),
+                                ListTile(
+                                  contentPadding: _sectionTilePadding,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: _sectionTileBorderRadius(
+                                      _SettingsTilePosition.last,
+                                    ),
+                                  ),
+                                  title: const Text(
+                                    'settingsBillingDailyBits',
+                                  ).tr(),
+                                  trailing: _UsageTrailing(
+                                    usage: policy.dailyPoints,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    0,
+                                    16,
+                                    16,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'settingsBillingSettleHint'.tr(),
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      FilledButton.tonalIcon(
+                                        onPressed: () =>
+                                            _settleBilling(context, ref),
+                                        icon: const Icon(Symbols.payments),
+                                        label: const Text(
+                                          'settingsBillingSettleNow',
+                                        ).tr(),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
-                  data: (enabled) => Column(
+                ],
+                const SizedBox(height: 24),
+                _SettingsSection(
+                  titleKey: 'settingsVaults',
+                  padding: EdgeInsets.zero,
+                  child: Column(
                     children: [
-                      SwitchListTile(
+                      ...[
+                        for (final (index, path) in vaultFiles.indexed)
+                          _VaultCloudBindingTile(
+                            vaultId: path,
+                            position: index == 0
+                                ? _SettingsTilePosition.first
+                                : _SettingsTilePosition.middle,
+                            title:
+                                vaultLabels[path] ??
+                                ref
+                                    .read(vaultFileStorageProvider)
+                                    .fileName(path),
+                            active: activeVaultFile == path,
+                            onSelect: () => ref
+                                .read(activeVaultFileProvider.notifier)
+                                .select(path),
+                            onExport: activeVaultFile == path
+                                ? () => _exportDatabase(context, ref)
+                                : null,
+                            onRename: () => _renameVault(
+                              context,
+                              ref,
+                              path,
+                              vaultLabels[path] ??
+                                  ref
+                                      .read(vaultFileStorageProvider)
+                                      .fileName(path),
+                            ),
+                            onDelete: activeVaultFile == path
+                                ? null
+                                : () => _deleteVault(context, ref, path),
+                            onImport: activeVaultFile == path
+                                ? () => _importDatabase(context, ref)
+                                : null,
+                            onSync: activeVaultFile == path
+                                ? () => _syncVault(context, ref, path)
+                                : null,
+                          ),
+                      ],
+                      ListTile(
+                        contentPadding: _sectionTilePadding,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: _sectionTileBorderRadius(
+                            _SettingsTilePosition.last,
+                          ),
+                        ),
+                        leading: const Icon(Symbols.add),
+                        title: const Text('settingsVaultCreate').tr(),
+                        trailing: const Icon(Symbols.chevron_right),
+                        onTap: () => _showVaultOnboarding(context, ref),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _SettingsSection(
+                  titleKey: 'settingsConnectionsTransfer',
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      ListTile(
                         contentPadding: _sectionTilePadding,
                         shape: RoundedRectangleBorder(
                           borderRadius: _sectionTileBorderRadius(
                             _SettingsTilePosition.first,
                           ),
                         ),
-                        title: const Text('settingsBiometricUnlock').tr(),
+                        leading: const Icon(Symbols.dns),
+                        title: const Text('settingsConnectionsExport').tr(),
                         subtitle: const Text(
-                          'settingsBiometricUnlockHint',
+                          'settingsConnectionsExportHint',
                         ).tr(),
-                        value: enabled,
-                        onChanged: (value) =>
-                            _setBiometricUnlock(context, ref, value),
+                        trailing: const Icon(Symbols.chevron_right),
+                        onTap: () => _exportConnections(context, ref),
                       ),
                       ListTile(
                         contentPadding: _sectionTilePadding,
@@ -570,381 +989,19 @@ class SettingsPage extends ConsumerWidget {
                             _SettingsTilePosition.last,
                           ),
                         ),
-                        leading: const Icon(Symbols.password),
-                        title: const Text('settingsVaultChangePassword').tr(),
+                        leading: const Icon(Symbols.upload_file),
+                        title: const Text('settingsConnectionsImport').tr(),
                         subtitle: const Text(
-                          'settingsVaultChangePasswordHint',
+                          'settingsConnectionsImportHint',
                         ).tr(),
                         trailing: const Icon(Symbols.chevron_right),
-                        onTap: () => _changeVaultPassword(context, ref),
+                        onTap: () => _importConnections(context, ref),
                       ),
                     ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              _SettingsSection(
-                titleKey: 'settingsAbout',
-                padding: EdgeInsets.zero,
-                child: ListTile(
-                  contentPadding: _sectionTilePadding,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: _sectionTileBorderRadius(
-                      _SettingsTilePosition.only,
-                    ),
-                  ),
-                  leading: const Icon(Symbols.info),
-                  title: Text('aboutTitle'.tr()),
-                  subtitle: Text('settingsAboutHint'.tr()),
-                  trailing: const Icon(Symbols.chevron_right),
-                  onTap: () => context.router.push(const AboutRoute()),
-                ),
-              ),
-              const SizedBox(height: 24),
-              _SettingsSection(
-                titleKey: 'settingsAccount',
-                padding: EdgeInsets.zero,
-                child: cloudUser.when(
-                  loading: () => ListTile(
-                    contentPadding: _sectionTilePadding,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: _sectionTileBorderRadius(
-                        _SettingsTilePosition.only,
-                      ),
-                    ),
-                    leading: const CircleAvatar(child: Icon(Symbols.person)),
-                    title: const Text('…'),
-                  ),
-                  error: (_, _) => _cloudLoginTile(context, ref),
-                  data: (user) => user == null
-                      ? _cloudLoginTile(context, ref)
-                      : Column(
-                          children: [
-                            ListTile(
-                              contentPadding: _sectionTilePadding,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: _sectionTileBorderRadius(
-                                  _SettingsTilePosition.only,
-                                ),
-                              ),
-                              leading: _CloudAvatar(user: user),
-                              title: Text(user.name),
-                              subtitle: user.handle.isEmpty
-                                  ? null
-                                  : Text(user.handle),
-                              trailing: IconButton(
-                                icon: const Icon(Symbols.logout),
-                                tooltip: 'settingsCloudSignOut'.tr(),
-                                onPressed: () =>
-                                    _signOutFromCloud(context, ref),
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-              if (cloudUser.asData?.value?.provider ==
-                  CloudSyncProvider.solarpass) ...[
-                const SizedBox(height: 24),
-                _SettingsSection(
-                  titleKey: 'settingsSolarNetworkAi',
-                  padding: EdgeInsets.zero,
-                  child: billingPolicyAsync.when(
-                    loading: () => const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: LinearProgressIndicator(),
-                    ),
-                    error: (error, _) => Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'settingsBillingError'.tr(args: [error.toString()]),
-                      ),
-                    ),
-                    data: (policy) => policy == null
-                        ? const SizedBox.shrink()
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              if (policy.blacklisted)
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    12,
-                                    16,
-                                    0,
-                                  ),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.errorContainer,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Symbols.warning_amber,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'settingsBillingBlacklisted'.tr(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  16,
-                                  16,
-                                  0,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'settingsAgentPersonalityAgent',
-                                    ).tr(),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'settingsAgentPersonalityAgentHint',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodyMedium,
-                                    ).tr(),
-                                    const SizedBox(height: 12),
-                                    agentPersonalityAgentAsync.when(
-                                      loading: () =>
-                                          const LinearProgressIndicator(),
-                                      error: (error, _) =>
-                                          Text(error.toString()),
-                                      data: (agentId) =>
-                                          _PersonalityAgentDropdown(
-                                            agentId: agentId,
-                                            agents:
-                                                personalityAgentsAsync
-                                                    .asData
-                                                    ?.value ??
-                                                const [],
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('settingsBillingUsage').tr(),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'settingsBillingUsageHint',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodyMedium,
-                                    ).tr(),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ListTile(
-                                contentPadding: _sectionTilePadding,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: _sectionTileBorderRadius(
-                                    _SettingsTilePosition.first,
-                                  ),
-                                ),
-                                title: const Text(
-                                  'settingsBillingHourlyGolds',
-                                ).tr(),
-                                trailing: _UsageTrailing(
-                                  usage: policy.hourlyGolds,
-                                ),
-                              ),
-                              ListTile(
-                                contentPadding: _sectionTilePadding,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: _sectionTileBorderRadius(
-                                    _SettingsTilePosition.middle,
-                                  ),
-                                ),
-                                title: const Text(
-                                  'settingsBillingHourlyBits',
-                                ).tr(),
-                                trailing: _UsageTrailing(
-                                  usage: policy.hourlyPoints,
-                                ),
-                              ),
-                              ListTile(
-                                contentPadding: _sectionTilePadding,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: _sectionTileBorderRadius(
-                                    _SettingsTilePosition.middle,
-                                  ),
-                                ),
-                                title: const Text(
-                                  'settingsBillingDailyGolds',
-                                ).tr(),
-                                trailing: _UsageTrailing(
-                                  usage: policy.dailyGolds,
-                                ),
-                              ),
-                              ListTile(
-                                contentPadding: _sectionTilePadding,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: _sectionTileBorderRadius(
-                                    _SettingsTilePosition.last,
-                                  ),
-                                ),
-                                title: const Text(
-                                  'settingsBillingDailyBits',
-                                ).tr(),
-                                trailing: _UsageTrailing(
-                                  usage: policy.dailyPoints,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  0,
-                                  16,
-                                  16,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'settingsBillingSettleHint'.tr(),
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    FilledButton.tonalIcon(
-                                      onPressed: () =>
-                                          _settleBilling(context, ref),
-                                      icon: const Icon(Symbols.payments),
-                                      label: const Text(
-                                        'settingsBillingSettleNow',
-                                      ).tr(),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
                   ),
                 ),
               ],
-              const SizedBox(height: 24),
-              _SettingsSection(
-                titleKey: 'settingsVaults',
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    ...[
-                      for (final (index, path) in vaultFiles.indexed)
-                        _VaultCloudBindingTile(
-                          vaultId: path,
-                          position: index == 0
-                              ? _SettingsTilePosition.first
-                              : _SettingsTilePosition.middle,
-                          title:
-                              vaultLabels[path] ??
-                              ref.read(vaultFileStorageProvider).fileName(path),
-                          active: activeVaultFile == path,
-                          onSelect: () => ref
-                              .read(activeVaultFileProvider.notifier)
-                              .select(path),
-                          onExport: activeVaultFile == path
-                              ? () => _exportDatabase(context, ref)
-                              : null,
-                          onRename: () => _renameVault(
-                            context,
-                            ref,
-                            path,
-                            vaultLabels[path] ??
-                                ref
-                                    .read(vaultFileStorageProvider)
-                                    .fileName(path),
-                          ),
-                          onDelete: activeVaultFile == path
-                              ? null
-                              : () => _deleteVault(context, ref, path),
-                          onImport: activeVaultFile == path
-                              ? () => _importDatabase(context, ref)
-                              : null,
-                          onSync: activeVaultFile == path
-                              ? () => _syncVault(context, ref, path)
-                              : null,
-                        ),
-                    ],
-                    ListTile(
-                      contentPadding: _sectionTilePadding,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: _sectionTileBorderRadius(
-                          _SettingsTilePosition.last,
-                        ),
-                      ),
-                      leading: const Icon(Symbols.add),
-                      title: const Text('settingsVaultCreate').tr(),
-                      trailing: const Icon(Symbols.chevron_right),
-                      onTap: () => _showVaultOnboarding(context, ref),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              _SettingsSection(
-                titleKey: 'settingsConnectionsTransfer',
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    ListTile(
-                      contentPadding: _sectionTilePadding,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: _sectionTileBorderRadius(
-                          _SettingsTilePosition.first,
-                        ),
-                      ),
-                      leading: const Icon(Symbols.dns),
-                      title: const Text('settingsConnectionsExport').tr(),
-                      subtitle: const Text(
-                        'settingsConnectionsExportHint',
-                      ).tr(),
-                      trailing: const Icon(Symbols.chevron_right),
-                      onTap: () => _exportConnections(context, ref),
-                    ),
-                    ListTile(
-                      contentPadding: _sectionTilePadding,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: _sectionTileBorderRadius(
-                          _SettingsTilePosition.last,
-                        ),
-                      ),
-                      leading: const Icon(Symbols.upload_file),
-                      title: const Text('settingsConnectionsImport').tr(),
-                      subtitle: const Text(
-                        'settingsConnectionsImportHint',
-                      ).tr(),
-                      trailing: const Icon(Symbols.chevron_right),
-                      onTap: () => _importConnections(context, ref),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1068,50 +1125,38 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
-  Widget _cloudLoginTile(BuildContext context, WidgetRef ref) => Column(
-    children: [
-      ListTile(
-        contentPadding: _sectionTilePadding,
-        shape: RoundedRectangleBorder(
-          borderRadius: _sectionTileBorderRadius(_SettingsTilePosition.first),
+  Widget _cloudLoginTile(BuildContext context, WidgetRef ref) => ListTile(
+    contentPadding: _sectionTilePadding,
+    shape: RoundedRectangleBorder(
+      borderRadius: _sectionTileBorderRadius(_SettingsTilePosition.only),
+    ),
+    leading: const CircleAvatar(child: Icon(Symbols.cloud_sync)),
+    title: const Text('settingsGoogleSignIn').tr(),
+    subtitle: const Text('settingsGoogleSignInHint').tr(),
+    trailing: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Symbols.settings),
+          tooltip: 'settingsGoogleOAuthConfigure'.tr(),
+          onPressed: () => _configureGoogleOAuth(context, ref),
         ),
-        leading: const CircleAvatar(child: Icon(Symbols.cloud_sync)),
-        title: const Text('settingsGoogleSignIn').tr(),
-        subtitle: const Text('settingsGoogleSignInHint').tr(),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Symbols.settings),
-              tooltip: 'settingsGoogleOAuthConfigure'.tr(),
-              onPressed: () => _configureGoogleOAuth(context, ref),
-            ),
-            const SizedBox(width: 4),
-            FilledButton(
-              onPressed: () => _signInWithGoogle(context, ref),
-              child: const Text('settingsCloudSignInAction').tr(),
-            ),
-          ],
-        ),
-        onTap: () => _signInWithGoogle(context, ref),
-      ),
-      const Divider(height: 1),
-      ListTile(
-        contentPadding: _sectionTilePadding,
-        shape: RoundedRectangleBorder(
-          borderRadius: _sectionTileBorderRadius(_SettingsTilePosition.last),
-        ),
-        leading: const CircleAvatar(child: Icon(Symbols.person)),
-        title: const Text('settingsCloudSignIn').tr(),
-        subtitle: const Text('settingsCloudSignInHint').tr(),
-        trailing: OutlinedButton(
-          onPressed: () => _signInToCloud(context, ref),
+        const SizedBox(width: 4),
+        FilledButton(
+          onPressed: () => _signInWithGoogle(context, ref),
           child: const Text('settingsCloudSignInAction').tr(),
         ),
-        onTap: () => _signInToCloud(context, ref),
-      ),
-    ],
+      ],
+    ),
+    onTap: () => _signInWithGoogle(context, ref),
   );
+
+  Future<void> _openGoogleCloudCredentials() async {
+    final uri = Uri.parse('https://console.cloud.google.com/apis/credentials');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   Future<bool> _configureGoogleOAuth(
     BuildContext context,
@@ -1136,7 +1181,21 @@ class SettingsPage extends ConsumerWidget {
                 'settingsGoogleOAuthHint'.tr(),
                 style: Theme.of(dialogContext).textTheme.bodySmall,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: _openGoogleCloudCredentials,
+                icon: const Icon(Symbols.open_in_new, size: 16),
+                label: Text('settingsGoogleOpenConsole'.tr()),
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: idController,
                 decoration: InputDecoration(
@@ -1192,20 +1251,6 @@ class SettingsPage extends ConsumerWidget {
         if (!configured || !context.mounted) return;
       }
       await service.signIn(provider: CloudSyncProvider.googleDrive);
-      ref.invalidate(cloudUserProvider);
-      ref.invalidate(cloudWorkspacesProvider);
-    } on CloudSyncException catch (error) {
-      if (context.mounted) _showMessage(error.message);
-    } catch (_) {
-      if (context.mounted) _showMessage('commonSomethingWentWrong'.tr());
-    }
-  }
-
-  Future<void> _signInToCloud(BuildContext context, WidgetRef ref) async {
-    try {
-      await ref
-          .read(cloudSyncServiceProvider)
-          .signIn(provider: CloudSyncProvider.solarpass);
       ref.invalidate(cloudUserProvider);
       ref.invalidate(cloudWorkspacesProvider);
     } on CloudSyncException catch (error) {
@@ -2543,6 +2588,7 @@ class _PersonalityAgentDropdown extends ConsumerWidget {
 
 class _SettingsSection extends StatelessWidget {
   const _SettingsSection({
+    super.key,
     required this.titleKey,
     required this.child,
     this.padding = const EdgeInsets.all(16),
