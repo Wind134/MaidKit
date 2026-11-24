@@ -7,6 +7,24 @@
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
+  // Enforce single instance on Windows so repeated launches focus the existing
+  // window instead of spawning duplicate processes and locking the vault DB.
+  HANDLE single_instance_mutex = ::CreateMutexW(
+      nullptr, TRUE, L"dev.solsynth.server_manager.single_instance");
+  if (single_instance_mutex != nullptr &&
+      ::GetLastError() == ERROR_ALREADY_EXISTS) {
+    HWND existing_window =
+        ::FindWindowW(L"FLUTTER_RUNNER_WIN32_WINDOW", L"Server Manager");
+    if (existing_window != nullptr) {
+      if (::IsIconic(existing_window)) {
+        ::ShowWindow(existing_window, SW_RESTORE);
+      }
+      ::SetForegroundWindow(existing_window);
+    }
+    ::CloseHandle(single_instance_mutex);
+    return EXIT_SUCCESS;
+  }
+
   // Attach to console when present (e.g., 'flutter run') or create a
   // new console when running with a debugger.
   if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {
@@ -39,5 +57,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   }
 
   ::CoUninitialize();
+  if (single_instance_mutex != nullptr) {
+    ::CloseHandle(single_instance_mutex);
+  }
   return EXIT_SUCCESS;
 }

@@ -173,20 +173,24 @@ jobs:
       - name: Normalize Android artifact names
         run: |
           mkdir -p ./android-release
+          APP_VERSION=$(grep -E '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
           APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
           for f in build/app/outputs/flutter-apk/app-*-release*.apk; do
             [ -f "$f" ] || continue
             name=$(basename "$f" .apk)
             name=${name%-unsigned}
-            cp "$f" "./android-release/$name.apk"
-            "$APKSIGNER" verify --verbose "./android-release/$name.apk"
+            abi=${name#app-}
+            abi=${abi%-release}
+            out="./android-release/server_manager_android_${abi}_${APP_VERSION}.apk"
+            cp "$f" "$out"
+            "$APKSIGNER" verify --verbose "$out"
           done
           ls -la ./android-release
       - name: Archive Android artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-output-android
-          path: ./android-release/app-*-release.apk
+          path: ./android-release/server_manager_android_*.apk
 
   publish-release:
     needs: [build-windows, build-linux, build-android]
@@ -201,11 +205,14 @@ jobs:
           path: ./artifacts
       - name: 整理发布文件
         run: |
-          # 文件名需与客户端下载链接一致
+          # 文件名需与客户端下载链接一致（统一带 _{version} 后缀）
+          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${VERSION#V}"
           mkdir -p ./release
-          (cd ./artifacts/build-output-windows-installer && zip -qr ../../release/build-output-windows-installer.zip .)
-          (cd ./artifacts/build-output-linux-appimage && zip -qr ../../release/build-output-linux-appimage.zip .)
-          cp ./artifacts/build-output-android/app-*-release.apk ./release/
+          (cd ./artifacts/build-output-windows-installer && zip -qr "../../release/server_manager_windows_${VERSION}.zip" .)
+          (cd ./artifacts/build-output-linux-appimage && zip -qr "../../release/server_manager_linux_${VERSION}.zip" .)
+          cp ./artifacts/build-output-android/server_manager_android_*.apk ./release/
+          ls -la ./release
       - name: 创建 Release 并上传安装包
         uses: softprops/action-gh-release@v2
         with:

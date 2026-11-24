@@ -146,8 +146,8 @@ class UpdateService {
       'https://api.github.com/repos/Wind134/MaidKit/releases/latest';
 
   // 安装包作为 Release 附件发布
-  static const _downloadBaseUrl =
-      'https://github.com/Wind134/MaidKit/releases/latest/download';
+  static const _releaseDownloadBase =
+      'https://github.com/Wind134/MaidKit/releases/download';
 
   /// Checks GitHub for the latest release and compares it against the current
   /// app version. If an update is available, shows a bottom sheet with the
@@ -252,13 +252,16 @@ class UpdateService {
         String? windowsUpdateUrl;
         String? linuxUpdateUrl;
         if (Platform.isAndroid) {
-          androidUpdateUrl = getAndroidDownloadUrl('arm64');
+          androidUpdateUrl = getAndroidDownloadUrl(
+            'arm64',
+            tagName: release.tagName,
+          );
         }
         if (Platform.isWindows) {
-          windowsUpdateUrl = getWindowsDownloadUrl();
+          windowsUpdateUrl = getWindowsDownloadUrl(tagName: release.tagName);
         }
         if (Platform.isLinux) {
-          linuxUpdateUrl = getLinuxDownloadUrl();
+          linuxUpdateUrl = getLinuxDownloadUrl(tagName: release.tagName);
         }
         return _UpdateSheet(
           release: release,
@@ -276,27 +279,29 @@ class UpdateService {
     );
   }
 
-  static const _androidFileNames = (
-    arm64: 'app-arm64-v8a-release.apk',
-    armeabi: 'app-armeabi-v7a-release.apk',
-    x86_64: 'app-x86_64-release.apk',
-  );
+  static String _versionFromTag(String tagName) =>
+      tagName.trim().replaceFirst(RegExp(r'^[vV]'), '');
 
-  static const _windowsFileName = 'build-output-windows-installer.zip';
-  static const _linuxFileName = 'build-output-linux-appimage.zip';
-
-  String getAndroidDownloadUrl(String arch) {
-    final fileName = switch (arch) {
-      'arm64' => _androidFileNames.arm64,
-      'armeabi' => _androidFileNames.armeabi,
-      'x86_64' => _androidFileNames.x86_64,
-      _ => _androidFileNames.arm64,
+  String getAndroidDownloadUrl(String arch, {required String tagName}) {
+    final version = _versionFromTag(tagName);
+    final abi = switch (arch) {
+      'arm64' => 'arm64-v8a',
+      'armeabi' => 'armeabi-v7a',
+      'x86_64' => 'x86_64',
+      _ => 'arm64-v8a',
     };
-    return '$_downloadBaseUrl/$fileName';
+    return '$_releaseDownloadBase/$tagName/server_manager_android_${abi}_$version.apk';
   }
 
-  String getWindowsDownloadUrl() => '$_downloadBaseUrl/$_windowsFileName';
-  String getLinuxDownloadUrl() => '$_downloadBaseUrl/$_linuxFileName';
+  String getWindowsDownloadUrl({required String tagName}) {
+    final version = _versionFromTag(tagName);
+    return '$_releaseDownloadBase/$tagName/server_manager_windows_$version.zip';
+  }
+
+  String getLinuxDownloadUrl({required String tagName}) {
+    final version = _versionFromTag(tagName);
+    return '$_releaseDownloadBase/$tagName/server_manager_linux_$version.zip';
+  }
 
   bool _isAndroidUpdateApk(String fileName) {
     return fileName.startsWith('maidkit-update-') && fileName.endsWith('.apk');

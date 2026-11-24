@@ -7,6 +7,8 @@
 
 [Setup]
 AppId=MaidKit
+AppMutex=dev.solsynth.server_manager.single_instance
+CloseApplications=yes
 AppName=Server Manager
 AppVersion={#AppVersion}
 AppPublisher=dev.solsynth

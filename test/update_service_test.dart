@@ -120,33 +120,33 @@ void main() {
   });
 
   group('download urls', () {
-    const base = 'https://github.com/Wind134/MaidKit/releases/latest/download';
+    const base = 'https://github.com/Wind134/MaidKit/releases/download/1.0.3';
 
-    test('resolves android split-abi apks', () {
+    test('resolves versioned android split-abi apks', () {
       final service = UpdateService();
       expect(
-        service.getAndroidDownloadUrl('arm64'),
-        '$base/app-arm64-v8a-release.apk',
+        service.getAndroidDownloadUrl('arm64', tagName: '1.0.3'),
+        '$base/server_manager_android_arm64-v8a_1.0.3.apk',
       );
       expect(
-        service.getAndroidDownloadUrl('armeabi'),
-        '$base/app-armeabi-v7a-release.apk',
+        service.getAndroidDownloadUrl('armeabi', tagName: '1.0.3'),
+        '$base/server_manager_android_armeabi-v7a_1.0.3.apk',
       );
       expect(
-        service.getAndroidDownloadUrl('x86_64'),
-        '$base/app-x86_64-release.apk',
+        service.getAndroidDownloadUrl('x86_64', tagName: '1.0.3'),
+        '$base/server_manager_android_x86_64_1.0.3.apk',
       );
     });
 
-    test('resolves windows installer and linux appimage zips', () {
+    test('resolves versioned windows installer and linux appimage zips', () {
       final service = UpdateService();
       expect(
-        service.getWindowsDownloadUrl(),
-        '$base/build-output-windows-installer.zip',
+        service.getWindowsDownloadUrl(tagName: '1.0.3'),
+        '$base/server_manager_windows_1.0.3.zip',
       );
       expect(
-        service.getLinuxDownloadUrl(),
-        '$base/build-output-linux-appimage.zip',
+        service.getLinuxDownloadUrl(tagName: '1.0.3'),
+        '$base/server_manager_linux_1.0.3.zip',
       );
     });
   });
